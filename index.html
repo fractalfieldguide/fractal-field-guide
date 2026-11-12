@@ -376,6 +376,9 @@ footer a, .prose a { color: var(--cyan); }
 .platenote { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 .varlbl { margin: 12px 0 8px; font-family: var(--f-mono); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: #8fb2e8; }
 .varlbl:first-of-type { margin-top: 4px; }
+.trimrow { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgb(255 255 255 / .08); align-items: center; }
+.trimrow .ctl { opacity: .8; }
+.trimnote { margin: 0; flex: 1; min-width: 200px; font-size: 13px; color: var(--muted); }
 .photo-credit a { color: var(--muted); }
 .type .tphoto { margin: -12px -14px 10px; aspect-ratio: 4 / 3; background: var(--plate); display: grid; place-items: center; border-radius: 10px 10px 0 0; overflow: hidden; max-width: calc(100% + 28px); }
 .type .tphoto img { width: 100%; height: 100%; object-fit: contain; }
@@ -534,9 +537,12 @@ footer a, .prose a { color: var(--cyan); }
   // The Amp block's Tone page in Authentic mode for this family's models, read from an FM9 (firmware 12.00)
   function authPlate(a) {
     const many = a.auth.length > 1;
-    const rows = a.auth.map(([labs, knobs]) => `${many ? `<p class="varlbl">${esc(labs.join(' · '))}</p>` : ''}<div class="knobs">${knobs.map(k => `<div class="ctl"><span class="knob" style="--a:0deg"></span><small>${esc(k)}</small></div>`).join('')}</div>`).join('');
+    const knob = k => `<div class="ctl"><span class="knob" style="--a:0deg"></span><small>${esc(k)}</small></div>`;
+    // Input Trim is Fractal's own control, on every model: shown on its own row, as FM9-Edit lays it out
+    const rows = a.auth.map(([labs, knobs]) => `${many ? `<p class="varlbl">${esc(labs.join(' · '))}</p>` : ''}<div class="knobs">${knobs.filter(k => k !== 'Input Trim').map(knob).join('')}</div>`).join('');
+    const trim = a.auth.some(g => g[1].includes('Input Trim')) ? `<div class="knobs trimrow">${knob('Input Trim')}<p class="trimnote">Fractal\'s own control, on every model: adds or reduces gain without changing the tone (no original amp has it).</p></div>` : '';
     const orig = a.controls ? `<p class="platenote"><b>On the original amp:</b> ${esc(a.controls)}</p>` : '';
-    return `<div class="plate"><p class="lbl">Tone page in Authentic mode</p>${rows}<p class="platenote">The knobs FM9-Edit shows for ${a.auth.reduce((n, g) => n + g[0].length, 0) > 1 ? 'these models' : 'this model'} with Tone Control Display set to Authentic (read from an FM9 on firmware 12.00). Knob positions aren\'t settings.</p>${orig}</div>`;
+    return `<div class="plate"><p class="lbl">Tone page in Authentic mode</p>${rows}${trim}<p class="platenote">The knobs FM9-Edit shows for ${a.auth.reduce((n, g) => n + g[0].length, 0) > 1 ? 'these models' : 'this model'} with Tone Control Display set to Authentic (read from an FM9 on firmware 12.00). Knob positions aren\'t settings.</p>${orig}</div>`;
   }
   function faceplate(controls, label, what = 'amp') {
     if (!controls) return '';
