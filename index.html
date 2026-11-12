@@ -236,6 +236,10 @@ img[src^="data:,img-"] { visibility: hidden; }
 .tabmore { position: absolute; top: 0; bottom: 0; right: max(16px, env(safe-area-inset-right, 0px)); width: 110px; border: 0; padding: 0 4px 0 0; text-align: right; font-size: 26px; line-height: 1; color: #fff; cursor: pointer; background: linear-gradient(to right, rgb(5 18 49 / 0), rgb(5 18 49) 45%); }
 .tabmore span { font-family: var(--f-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 4px; margin-right: 2px; color: var(--accent); }
 .tabmore[hidden] { display: none; }
+.tabback { position: absolute; top: 0; bottom: 0; left: 0; width: 110px; border: 0; padding: 0 0 0 6px; text-align: left; font-size: 26px; line-height: 1; color: #fff; cursor: pointer; z-index: 1; background: linear-gradient(to left, rgb(5 18 49 / 0), rgb(5 18 49) 55%); }
+.tabback[hidden] { display: none; }
+@media (max-width: 600px) { .tabback { width: 52px; } .tabback span { display: none; } }
+.tabback span { font-family: var(--f-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 4px; margin-left: 2px; color: var(--accent); }
 .subrow { position: relative; }
 .subrow[hidden] { display: none; }
 #submore { right: 0; padding-right: max(16px, env(safe-area-inset-right, 0px)); width: 130px; background: linear-gradient(to right, rgb(3 12 36 / 0), rgb(3 12 36) 45%); font-size: 22px; }
@@ -411,7 +415,7 @@ footer a, .prose a { color: var(--cyan); }
   </div>
 </header>
 
-<nav class="tabs" aria-label="Blocks"><div class="wrap tabrow"><button type="button" class="allbtn" id="allbtn" aria-expanded="false" aria-controls="allmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="al-long">All sections</span><span class="al-short">All</span></button><div class="tabscroll" id="tabs"></div><button type="button" class="tabmore" id="tabmore" aria-label="Scroll to more tabs" hidden><span>More</span> ›</button></div><div class="subrow" id="subrow" hidden><div class="wrap subtabs" id="subtabs"></div><button type="button" class="tabmore" id="submore" aria-label="Scroll to more pages" hidden><span>More</span> ›</button></div><div class="allmenu" id="allmenu" hidden><div class="wrap allgrid" id="allgrid"></div></div></nav>
+<nav class="tabs" aria-label="Blocks"><div class="wrap tabrow"><button type="button" class="allbtn" id="allbtn" aria-expanded="false" aria-controls="allmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="al-long">All sections</span><span class="al-short">All</span></button><button type="button" class="tabback" id="tabback" aria-label="Scroll back to earlier tabs" hidden>‹ <span>Back</span></button><div class="tabscroll" id="tabs"></div><button type="button" class="tabmore" id="tabmore" aria-label="Scroll to more tabs" hidden><span>More</span> ›</button></div><div class="subrow" id="subrow" hidden><button type="button" class="tabback" id="subback" aria-label="Scroll back to earlier pages" hidden>‹ <span>Back</span></button><div class="wrap subtabs" id="subtabs"></div><button type="button" class="tabmore" id="submore" aria-label="Scroll to more pages" hidden><span>More</span> ›</button></div><div class="allmenu" id="allmenu" hidden><div class="wrap allgrid" id="allgrid"></div></div></nav>
 
 <main>
   <section id="v-amps" class="view" hidden>
@@ -515,16 +519,30 @@ footer a, .prose a { color: var(--cyan); }
   document.addEventListener('click', e => { if (!$('#allmenu').hidden && !e.target.closest('.tabs')) setAllMenu(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#allmenu').hidden) { setAllMenu(false); $('#allbtn').focus(); } });
   const overflows = (s) => s.scrollWidth - s.clientWidth - s.scrollLeft > 4;
-  function updMore() { $('#tabmore').hidden = !overflows($('#tabs')); $('#submore').hidden = $('#subrow').hidden || !overflows($('#subtabs')); }
+  const scrolled = (s) => s.scrollLeft > 4;
+  // the back arrow sits at the start of each scrolling row (after the All button on the top row)
+  const placeBack = (b, s) => { const cs = getComputedStyle(s); b.style.left = (s.getBoundingClientRect().left - b.parentElement.getBoundingClientRect().left + parseFloat(cs.paddingLeft)) + 'px'; };
+  function updMore() {
+    $('#tabmore').hidden = !overflows($('#tabs')); $('#submore').hidden = $('#subrow').hidden || !overflows($('#subtabs'));
+    $('#tabback').hidden = !scrolled($('#tabs')); $('#subback').hidden = $('#subrow').hidden || !scrolled($('#subtabs'));
+    if (!$('#tabback').hidden) placeBack($('#tabback'), $('#tabs'));
+    if (!$('#subback').hidden) placeBack($('#subback'), $('#subtabs'));
+  }
   $('#tabs').addEventListener('scroll', updMore, { passive: true });
   $('#subtabs').addEventListener('scroll', updMore, { passive: true });
   window.addEventListener('resize', updMore);
   $('#tabmore').addEventListener('click', () => { const s = $('#tabs'); s.scrollBy({ left: s.clientWidth * 0.7, behavior: 'smooth' }); });
   $('#submore').addEventListener('click', () => { const s = $('#subtabs'); s.scrollBy({ left: s.clientWidth * 0.7, behavior: 'smooth' }); });
+  $('#tabback').addEventListener('click', () => { const s = $('#tabs'); s.scrollBy({ left: -s.clientWidth * 0.7, behavior: 'smooth' }); });
+  $('#subback').addEventListener('click', () => { const s = $('#subtabs'); s.scrollBy({ left: -s.clientWidth * 0.7, behavior: 'smooth' }); });
   function keepInView(t, sel) { const c = t.querySelector(sel); if (!c) return; const tr = t.getBoundingClientRect(), cr = c.getBoundingClientRect(); if (cr.left < tr.left || cr.right > tr.right - 110) t.scrollLeft += cr.left - tr.left - (tr.width - cr.width) / 2; }
   const _setTabs = setTabs;
   setTabs = function (k) { _setTabs(k); $('#subrow').hidden = $('#subtabs').hidden; $('#subtabs').hidden = false; document.querySelectorAll('#allgrid a').forEach(a => a.setAttribute('aria-current', a.dataset.k === k ? 'page' : 'false')); requestAnimationFrame(() => { keepInView($('#tabs'), '.tab[aria-current="page"]'); if (!$('#subrow').hidden) keepInView($('#subtabs'), '.stab[aria-current="page"]'); updMore(); setTimeout(updMore, 400); }); };
   setTimeout(updMore, 0);
+  // on a fresh load the tab widths change once the fonts arrive, so bring the current tab into view again then
+  const reCenter = () => { const t = $('#tabs'), b = t.style.scrollBehavior; t.style.scrollBehavior = 'auto'; keepInView(t, '.tab[aria-current="page"]'); t.style.scrollBehavior = b; if (!$('#subrow').hidden) keepInView($('#subtabs'), '.stab[aria-current="page"]'); updMore(); };
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(reCenter));
+  window.addEventListener('load', () => setTimeout(reCenter, 50));
 
   /* ---------- Shared bits ---------- */
   function initials(name) { return name.split(/\s+/).slice(0, 2).join(' '); }
