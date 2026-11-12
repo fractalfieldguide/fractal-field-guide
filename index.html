@@ -277,6 +277,9 @@ details.acc > summary small { font-family: var(--f-mono); font-size: 13px; color
 .inline-search { flex: 1 1 240px; min-width: 0; position: relative; }
 .inline-search input { width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
 .note { font-size: 14.5px; color: var(--muted); }
+.gnote { font-size: 17px; line-height: 1.5; color: var(--ink); opacity: .85; margin: 2px 0 14px; max-width: 75ch; }
+.tgtabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 4px; }
+.tgtabs .tchip span { opacity: .7; margin-left: 4px; }
 .shots { display: flex; gap: 10px; overflow-x: auto; margin-top: 16px; padding-bottom: 4px; }
 .shots img { height: 190px; width: auto; max-width: none; border-radius: 8px; border: 1px solid var(--line); background: #000; flex: none; }
 .catsel { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -769,7 +772,8 @@ footer a, .prose a { color: var(--cyan); }
   function typeGroups(b) {
     const notes = {};
     b.sections.forEach(s => (s.subs || []).forEach(x => notes[slug(x.title)] = s.title));
-    return (b.typenote ? `<p class="note" style="margin-top:14px">${esc(b.typenote)}</p>` : '') + b.types.map(g => `<section class="vsec"><h3>${esc(g.label)} <span class="note">(${g.items.length})</span></h3>${g.note ? `<p class="note" style="margin:-4px 0 12px">${esc(g.note)}</p>` : ''}<div class="types">${g.items.map(([n, d]) => {
+    const tabs = b.types.length >= 4 ? `<div class="tgtabs" role="group" aria-label="Show one category"><button type="button" class="tchip" data-tgf="all" aria-pressed="true">All<span>${b.types.reduce((n, g) => n + g.items.length, 0)}</span></button>${b.types.map((g, i) => `<button type="button" class="tchip" data-tgf="${i}" aria-pressed="false">${esc(g.label)}<span>${g.items.length}</span></button>`).join('')}</div>` : '';
+    return (b.typenote ? `<p class="gnote" style="margin-top:14px">${esc(b.typenote)}</p>` : '') + tabs + b.types.map((g, gi) => `<section class="vsec tgsec" data-tg="${gi}"><h3>${esc(g.label)} <span class="note">(${g.items.length})</span></h3>${g.note ? `<p class="gnote">${esc(g.note)}</p>` : ''}<div class="types">${g.items.map(([n, d]) => {
       const sl = slug(n.split(/[|(]/)[0]);
       const key = Object.keys(notes).find(k => k === sl || (sl.length > 4 && (k.startsWith(sl) || sl.startsWith(k))));
       const pr = PM.fx[b.key + '|' + n];
@@ -954,6 +958,7 @@ footer a, .prose a { color: var(--cyan); }
     const dq = e.target.closest('[data-dq]'); if (dq) { e.preventDefault(); showFiltered('dynacabs', dq.dataset.dq); return; }
     const im = e.target.closest('[data-irmk]'); if (im) { e.preventDefault(); showFiltered('cabs', '', im.dataset.irmk); return; }
     const cm = e.target.closest('[data-cmp]'); if (cm) { toggleCmp(cm.dataset.cmp); return; }
+    const tgf = e.target.closest('[data-tgf]'); if (tgf) { const f = tgf.dataset.tgf; tgf.parentElement.querySelectorAll('[data-tgf]').forEach(x => x.setAttribute('aria-pressed', String(x === tgf))); document.querySelectorAll('#blockview .tgsec').forEach(sec => { sec.hidden = f !== 'all' && sec.dataset.tg !== f; }); return; }
     const uc = e.target.closest('[data-uncmp]'); if (uc) { CMP = uc.dataset.uncmp === '*' ? [] : CMP.filter(x => x !== uc.dataset.uncmp); store.set('ffg-cmp', CMP); refreshPill(); if (view === 'compare') $('#blockview').innerHTML = compareView(); return; }
     const j = e.target.closest('[data-jump]'); if (j) jump(j.dataset.jump);
   });
