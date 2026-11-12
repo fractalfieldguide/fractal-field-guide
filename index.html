@@ -224,6 +224,26 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
 .fwchip { display: inline-block; margin: 2px 6px 6px 0; font-family: var(--f-mono); font-size: 12.5px; letter-spacing: .04em; color: var(--cyan); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 img[src^="data:,img-"] { visibility: hidden; }
 .subtabs { border-top: 1px solid var(--line); background: rgb(3 12 36 / .55); }
+.tabs .tabrow { display: flex; align-items: stretch; gap: 0; overflow: visible; position: relative; }
+.tabscroll { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; scroll-behavior: smooth; }
+.tabscroll::-webkit-scrollbar { display: none; }
+.allbtn { flex: none; display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: rgb(255 255 255 / .06); border: 1px solid var(--line); border-radius: 8px; margin: 8px 10px 8px 0; padding: 0 12px; cursor: pointer; }
+.allbtn:hover { border-color: var(--cyan); }
+.allbtn[aria-expanded="true"] { background: var(--accent); color: #1a1400; border-color: var(--accent); }
+.allbtn .al-short { display: none; }
+.tabmore { position: absolute; top: 0; bottom: 0; right: max(16px, env(safe-area-inset-right, 0px)); width: 110px; border: 0; padding: 0 4px 0 0; text-align: right; font-size: 26px; line-height: 1; color: #fff; cursor: pointer; background: linear-gradient(to right, rgb(5 18 49 / 0), rgb(5 18 49) 45%); }
+.tabmore span { font-family: var(--f-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 4px; margin-right: 2px; color: var(--accent); }
+.tabmore[hidden] { display: none; }
+.allmenu { border-top: 1px solid var(--line); background: rgb(5 18 49 / .97); max-height: calc(100vh - 140px); overflow-y: auto; }
+.allmenu[hidden] { display: none; }
+.tabs .allgrid { display: grid; overflow: visible; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px 28px; padding-block: 18px 24px; }
+.allgrid h4 { margin: 0 0 4px; font-family: var(--f-wide); font-weight: 400; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; }
+.allgrid h4 a { color: #fff; text-decoration: none; }
+.allgrid ul { list-style: none; margin: 0; padding: 0; }
+.allgrid li a { display: block; padding: 4px 0; color: #9fb6df; text-decoration: none; font-size: 17px; }
+.allgrid a:hover, .allgrid a:focus-visible { color: #fff; text-decoration: underline; }
+.allgrid a[aria-current="page"] { color: var(--accent); }
+@media (max-width: 640px) { .allbtn .al-long { display: none; } .allbtn .al-short { display: inline; } .allbtn { padding: 0 10px; margin-right: 6px; } .tabs .allgrid { grid-template-columns: 1fr 1fr; gap: 14px 18px; } }
 .stab { flex: none; font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; text-decoration: none; color: #9fb6df; padding: 9px 12px 7px; border-bottom: 2px solid transparent; white-space: nowrap; }
 .stab:hover { color: #fff; }
 .stab[aria-current="page"] { color: #fff; border-bottom-color: var(--cyan); }
@@ -382,7 +402,7 @@ footer a, .prose a { color: var(--cyan); }
   </div>
 </header>
 
-<nav class="tabs" aria-label="Blocks"><div class="wrap" id="tabs"></div><div class="wrap subtabs" id="subtabs" hidden></div></nav>
+<nav class="tabs" aria-label="Blocks"><div class="wrap tabrow"><button type="button" class="allbtn" id="allbtn" aria-expanded="false" aria-controls="allmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="al-long">All sections</span><span class="al-short">All</span></button><div class="tabscroll" id="tabs"></div><button type="button" class="tabmore" id="tabmore" aria-label="Scroll to more tabs" hidden><span>More</span> ›</button></div><div class="wrap subtabs" id="subtabs" hidden></div><div class="allmenu" id="allmenu" hidden><div class="wrap allgrid" id="allgrid"></div></div></nav>
 
 <main>
   <section id="v-amps" class="view" hidden>
@@ -477,6 +497,21 @@ footer a, .prose a { color: var(--cyan); }
     else { st.hidden = true; st.innerHTML = ''; }
     const cur = document.querySelector('#tabs .tab[aria-current="page"]'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
+
+  // "All sections" menu and the "more tabs" arrow, so people can see the tab row continues
+  $('#allgrid').innerHTML = GROUPS.filter(g => g.k.length).map(g => `<div><h4><a href="#${g.k[0]}" data-k="${g.k[0]}">${esc(g.t)}</a></h4>${g.k.length > 1 ? `<ul>${g.k.map(x => `<li><a href="#${x}" data-k="${x}">${esc(viewTitle(x))}</a></li>`).join('')}</ul>` : ''}</div>`).join('');
+  function setAllMenu(open) { $('#allmenu').hidden = !open; $('#allbtn').setAttribute('aria-expanded', String(open)); }
+  $('#allbtn').addEventListener('click', () => setAllMenu($('#allmenu').hidden));
+  $('#allmenu').addEventListener('click', e => { if (e.target.closest('a')) setAllMenu(false); });
+  document.addEventListener('click', e => { if (!$('#allmenu').hidden && !e.target.closest('.tabs')) setAllMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#allmenu').hidden) { setAllMenu(false); $('#allbtn').focus(); } });
+  function updMore() { const s = $('#tabs'); $('#tabmore').hidden = !(s.scrollWidth - s.clientWidth - s.scrollLeft > 4); }
+  $('#tabs').addEventListener('scroll', updMore, { passive: true });
+  window.addEventListener('resize', updMore);
+  $('#tabmore').addEventListener('click', () => { const s = $('#tabs'); s.scrollBy({ left: s.clientWidth * 0.7, behavior: 'smooth' }); });
+  const _setTabs = setTabs;
+  setTabs = function (k) { _setTabs(k); document.querySelectorAll('#allgrid a').forEach(a => a.setAttribute('aria-current', a.dataset.k === k ? 'page' : 'false')); requestAnimationFrame(() => { const t = $('#tabs'), c = t.querySelector('.tab[aria-current="page"]'); if (c) { const tr = t.getBoundingClientRect(), cr = c.getBoundingClientRect(); if (cr.left < tr.left || cr.right > tr.right - 110) t.scrollLeft += cr.left - tr.left - (tr.width - cr.width) / 2; } updMore(); setTimeout(updMore, 400); }); };
+  setTimeout(updMore, 0);
 
   /* ---------- Shared bits ---------- */
   function initials(name) { return name.split(/\s+/).slice(0, 2).join(' '); }
