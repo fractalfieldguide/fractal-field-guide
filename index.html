@@ -1237,7 +1237,7 @@ footer a, .prose a { color: var(--cyan); }
     if (pendingJump) doJump();   // a search result asked to open a section on this page
   }
   window.addEventListener('hashchange', route);
-  if (BD.lazy) fetch('text.json').then(r => r.json()).then(T => {
+  if (BD.lazy) fetch('text.json?v=252ee2f6d5').then(r => r.json()).then(T => {
     BLOCKS.forEach(b => { const t = T[b.key]; if (!t) return;
       b.sections.forEach((s, i) => { const ts = t[i]; if (!ts) return; s.c = ts[0]; (s.subs || []).forEach((x, j) => { if (ts[1][j]) x.c = ts[1][j]; }); }); });
     TEXT_READY = true; GIX = null;
@@ -1262,7 +1262,7 @@ footer a, .prose a { color: var(--cyan); }
     const inl = document.getElementById('imgdata');
     if (inl) { Object.assign(IMGD, JSON.parse(inl.textContent)); fillImgs(document); return; }
     const n = 4;
-    for (let i = 0; i < n; i++) fetch('img-' + i + '.json').then(r => r.json()).then(d => { Object.assign(IMGD, d); fillImgs(document); }).catch(() => {});
+    for (let i = 0; i < n; i++) fetch('img-' + i + '.json?v=252ee2f6d5').then(r => r.json()).then(d => { Object.assign(IMGD, d); fillImgs(document); }).catch(() => {});
   })();
 })();
 </script>
