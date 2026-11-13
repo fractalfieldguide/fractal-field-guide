@@ -353,6 +353,7 @@ header.top .lede strong { color: var(--accent); }
 .tchip[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: #1a1400; border-color: var(--accent); }
 .seg { border-color: var(--line); }
 .seg button { background: var(--bg-deep); color: var(--ink); }
+.griddiv { grid-column: 1 / -1; margin: 18px 0 2px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--f-mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .paneswitch { display: flex; width: fit-content; max-width: 100%; margin: 20px 0 4px; }
 .paneswitch button { font-family: var(--f-display); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: .03em; padding: 10px 20px; }
 .paneswitch .pn { font-family: var(--f-mono); font-weight: 400; font-size: 13px; margin-left: 4px; opacity: .8; }
@@ -644,6 +645,17 @@ footer a, .prose a { color: var(--cyan); }
     Object.entries(makers).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([m, n]) => `<option value="${esc(m)}">${esc(m)} (${n})</option>`).join('');
   const TUBES = ['EL34', '6L6', 'EL84', '6V6', '6550', 'KT88'];
   $('#tubes').innerHTML = TUBES.map(t => `<button class="tchip" type="button" data-t="${t}" aria-pressed="false">${t}</button>`).join('');
+  // what the amp/drive is: name, models, original, maker (matches here are listed first; mentions in notes come after)
+  const keyA = AMPS.map(a => [a.name, a.variants.join(' '), a.orig, a.brand].join(' ').toLowerCase());
+  // split a filtered list into direct matches and mentions, for the grid and its count line
+  function splitHits(list, isKey, terms, cardFn, noun, total) {
+    if (!terms.length) return { list, html: list.map(cardFn).join(''), count: `${list.length} of ${total} ${noun}` };
+    const top = list.filter(isKey), rest = list.filter(x => !isKey(x));
+    const q = terms.join(' ');
+    const div = top.length && rest.length ? `<p class="griddiv">Also mentioned in the notes of these ${noun.split(' ').pop()}</p>` : '';
+    return { list: top.concat(rest), html: top.map(cardFn).join('') + div + rest.map(cardFn).join(''),
+      count: `${top.length} ${top.length === 1 ? 'match' : 'matches'}${rest.length ? ` · ${rest.length} more mention “${q}”` : ''}` };
+  }
   const hayA = AMPS.map(a => [a.yw.map(w => w.paras.join(' ')).join(' '), a.name, a.variants.join(' '), a.orig, a.brand, a.tubesTxt, a.controls, a.notes.join(' '), a.fq.join(' '), a.dyna, a.cab].join(' ').toLowerCase());
   function ampCard(a) {
     const yp = firstPara(a.yw);
@@ -659,10 +671,12 @@ footer a, .prose a { color: var(--cyan); }
   }
   function renderAmps() {
     const terms = st.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    shownAmps = AMPS.filter((a, i) => (!st.maker || a.brand === st.maker) && (!st.tube || a.tubes.includes(st.tube)) && terms.every(t => hayA[i].includes(t)));
-    $('#grid').innerHTML = shownAmps.map(ampCard).join('');
+    const found = AMPS.filter((a, i) => (!st.maker || a.brand === st.maker) && (!st.tube || a.tubes.includes(st.tube)) && terms.every(t => hayA[i].includes(t)));
+    const r = splitHits(found, a => terms.every(t => keyA[AMPS.indexOf(a)].includes(t)), terms, ampCard, 'amp families', AMPS.length);
+    shownAmps = r.list;
+    $('#grid').innerHTML = r.html;
     $('#empty').hidden = shownAmps.length > 0;
-    $('#count').textContent = `${shownAmps.length} of ${AMPS.length} amp families`;
+    $('#count').textContent = r.count;
   }
   $('#q').addEventListener('input', e => { st.q = e.target.value; renderAmps(); });
   $('#maker').addEventListener('change', e => { st.maker = e.target.value; renderAmps(); });
@@ -1020,10 +1034,13 @@ footer a, .prose a { color: var(--cyan); }
   }
   function renderDrives() {
     const terms = ds.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    shownDrv = DRV.models.filter(m => (!ds.cat || m.cats.includes(ds.cat)) && (!ds.clip || m.clips.includes(ds.clip)) && terms.every(t => m.hay.includes(t)));
-    $('#dgrid').innerHTML = shownDrv.map(drvCard).join('');
+    const found = DRV.models.filter(m => (!ds.cat || m.cats.includes(ds.cat)) && (!ds.clip || m.clips.includes(ds.clip)) && terms.every(t => m.hay.includes(t)));
+    const key = m => [m.name, m.orig, (m.variants || []).map(v => v.name + ' ' + v.orig).join(' ')].join(' ').toLowerCase();
+    const r = splitHits(found, m => terms.every(t => key(m).includes(t)), terms, drvCard, 'drive families', DRV.models.length);
+    shownDrv = r.list;
+    $('#dgrid').innerHTML = r.html;
     $('#dempty').hidden = shownDrv.length > 0;
-    $('#dcount').textContent = `${shownDrv.length} of ${DRV.models.length} drive families`;
+    $('#dcount').textContent = r.count;
   }
   const isDyna = (s) => /dynacab/i.test(s.title);
   const MAKERS = [
