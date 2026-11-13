@@ -267,6 +267,14 @@ details.acc > summary::before { content: "+"; font-family: var(--f-mono); color:
 details.acc[open] > summary::before { content: "–"; }
 details.acc > summary b { font-family: var(--f-display); font-weight: 800; font-size: 24px; text-transform: uppercase; letter-spacing: .02em; }
 details.acc > summary small { font-family: var(--f-mono); font-size: 13px; color: var(--muted); }
+details.topic { border-top: 1px solid var(--line); }
+details.topic:last-child { border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+details.topic > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; padding: 11px 0; font-family: var(--f-display); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: .02em; }
+details.topic > summary::-webkit-details-marker { display: none; }
+details.topic > summary::before { content: "›"; font-family: var(--f-mono); color: var(--accent); width: 12px; flex: none; transition: transform .15s; }
+details.topic[open] > summary::before { transform: rotate(90deg); }
+details.topic > summary:hover span { color: var(--cyan); }
+details.topic .topicbody { padding: 0 0 10px 22px; }
 .accbody { padding: 0 18px 18px 40px; min-width: 0; }
 .prose { max-width: 75ch; min-width: 0; }
 .prose p { margin: 0 0 10px; }
@@ -590,7 +598,7 @@ footer a, .prose a { color: var(--cyan); }
     }).join('');
   }
   function sectionHtml(s, open) {
-    let body = rc(s.c) + (s.subs || []).map(x => `<h4 id="${'s-' + slug(x.title)}">${esc(x.title)}</h4>${rc(x.c)}`).join('');
+    let body = rc(s.c) + (s.subs || []).map(x => `<details class="topic"><summary id="${'s-' + slug(x.title)}"><span>${esc(x.title)}</span></summary><div class="topicbody">${rc(x.c)}</div></details>`).join('');  // each topic opens on its own
     if (!TEXT_READY) body = '<p class="note">Loading…</p>' + body;
     else if (TEXT_FAILED) body = '<p class="note">The full text didn\'t load. Refresh the page to try again.</p>' + body;
     if (!body.trim()) return '';
@@ -755,6 +763,7 @@ footer a, .prose a { color: var(--cyan); }
     const d = [...document.querySelectorAll('#blockview details.acc')].find(x => x.querySelector('summary b')?.textContent === secTitle);
     if (!d) { if (TEXT_READY) pendingJump = null; return; } d.open = true;
     const h = subTitle ? d.querySelector('#s-' + CSS.escape(slug(subTitle))) : d.querySelector('summary');
+    if (h && h.parentElement.matches('details.topic')) h.parentElement.open = true;
     const el = h || d.querySelector('summary');
     const top = el.getBoundingClientRect().top + window.scrollY - ($('.tabs')?.offsetHeight || 0) - 16;
     window.scrollTo({ top });
