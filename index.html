@@ -350,6 +350,11 @@ header.top .lede strong { color: var(--accent); }
 .tchip[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: #1a1400; border-color: var(--accent); }
 .seg { border-color: var(--line); }
 .seg button { background: var(--bg-deep); color: var(--ink); }
+.paneswitch { display: flex; width: fit-content; max-width: 100%; margin: 20px 0 4px; }
+.paneswitch button { font-family: var(--f-display); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: .03em; padding: 10px 20px; }
+.paneswitch .pn { font-family: var(--f-mono); font-weight: 400; font-size: 13px; margin-left: 4px; opacity: .8; }
+.paneswitch button[data-pane="types"] { white-space: nowrap; }
+@media (max-width: 600px) { .paneswitch button { font-size: 16px; padding: 8px 12px; } }
 .maker { color: var(--cyan); }
 .tube { background: var(--chip); border-color: var(--line); }
 .yektag { color: var(--accent); }
@@ -760,6 +765,7 @@ footer a, .prose a { color: var(--cyan); }
   function doJump() {
     if (!pendingJump) return; const [target, secTitle, subTitle] = pendingJump;
     if (view !== target) return;
+    if (!/^dynacabs$/.test(target)) setPane('block');
     const d = [...document.querySelectorAll('#blockview details.acc')].find(x => x.querySelector('summary b')?.textContent === secTitle);
     if (!d) { if (TEXT_READY) pendingJump = null; return; } d.open = true;
     const h = subTitle ? d.querySelector('#s-' + CSS.escape(slug(subTitle))) : d.querySelector('summary');
@@ -915,24 +921,40 @@ footer a, .prose a { color: var(--cyan); }
   function blockHead(b, lede) {
     return `<div class="view-head"><h2>${esc(b.title)}</h2>${lede ? `<p class="lede">${lede}</p>` : ''}${devsHtml(b)}</div>`;
   }
+  // Block pages show their types first; the block's own info sits behind a second button
+  const PANE = {};
+  const blockName = b => b.page ? b.page.replace(/_/g, ' ').replace(/\b(blocks?)\b.*$/i, '$1') : b.title + ' block';
+  function paneWrap(k, nTypes, blockLabel, typesHtml, blockHtml) {
+    const p = PANE[k] || 'types';
+    return `<div class="paneswitch seg" role="group" aria-label="Show"><button type="button" data-pane="types" aria-pressed="${p === 'types'}">Types <span class="pn">${nTypes}</span></button><button type="button" data-pane="block" aria-pressed="${p === 'block'}">${esc(blockLabel)}</button></div>
+      <div data-panel="types"${p === 'types' ? '' : ' hidden'}>${typesHtml}</div><div data-panel="block"${p === 'block' ? '' : ' hidden'}>${blockHtml}</div>`;
+  }
+  function setPane(p) {
+    if (!document.querySelector('#blockview [data-panel]')) return;
+    PANE[view] = p;
+    document.querySelectorAll('#blockview [data-pane]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.pane === p)));
+    document.querySelectorAll('#blockview [data-panel]').forEach(x => x.hidden = x.dataset.panel !== p);
+  }
+  document.addEventListener('click', e => { const b = e.target.closest('#blockview [data-pane]'); if (b) setPane(b.dataset.pane); });
   function genericView(b) {
     const intro = rc(b.intro.filter(c => c.t !== 'img'));
     const shots = b.intro.filter(c => c.t === 'img' && IMGS[c.k]).map(c => `<img src="${IMGS[c.k]}" alt="${esc(b.title)} block on the device screen" loading="lazy">`).join('');
-    return blockHead(b, '') + (shots ? `<div class="shots">${shots}</div>` : '') + (intro ? `<div class="prose" style="margin-top:12px">${intro}</div>` : '') + typeGroups(b) +
-      (b.key === 'nam' ? `<p class="note" style="margin-top:18px">Loading captures, storage, CPU and tips are on the <a href="#namblock">NAM block</a> tab.</p>` :
-      `<section class="vsec"><h3>${b.srclabel || (b.page ? 'From the wiki' : 'From the Blocks Guide and firmware notes')}</h3>${b.sections.map((s, i) => sectionHtml(s, false)).join('')}</section>`) + `
+    const secs = `<section class="vsec"><h3>${b.srclabel || (b.page ? 'From the wiki' : 'From the Blocks Guide and firmware notes')}</h3>${b.sections.map((s, i) => sectionHtml(s, false)).join('')}</section>`;
+    const nTypes = (b.types || []).reduce((n, g) => n + g.items.length, 0);
+    const body = b.key === 'nam' ? typeGroups(b) + `<p class="note" style="margin-top:18px">Loading captures, storage, CPU and tips are on the <a href="#namblock">NAM block</a> tab.</p>`
+      : nTypes && b.sections.length ? paneWrap(b.key, nTypes, blockName(b), typeGroups(b), secs) : typeGroups(b) + secs;
+    return blockHead(b, '') + (shots ? `<div class="shots">${shots}</div>` : '') + (intro ? `<div class="prose" style="margin-top:12px">${intro}</div>` : '') + body + `
       <div class="links">${b.links ? b.links.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('') : `<a href="${WIKI}${b.page}" target="_blank" rel="noopener">Open the ${esc(b.title)} page on the wiki ↗</a>`}</div>`;
   }
   function drivesView(b) {
     const catOpts = (DRV.cats['Per category'] || []).map(([l]) => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
     const clipOpts = (DRV.cats['Per clip type'] || []).map(([l]) => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
     return blockHead(b, `Every Drive type, with the pedal it's based on and Yek's write-up. Yek moved his July 2022 drive guide for the Axe-Fx III, FM9 and FM3 onto the wiki and keeps it up to date there.`) +
-      `<div class="bankbar" style="margin-top:16px"><label class="inline-search" for="dq"><input id="dq" type="search" placeholder="Search drives, pedals or notes" autocomplete="off" aria-label="Search drives"></label>
+      paneWrap('drives', DRV.models.length, 'Drive block', `<div class="bankbar" style="margin-top:16px"><label class="inline-search" for="dq"><input id="dq" type="search" placeholder="Search drives, pedals or notes" autocomplete="off" aria-label="Search drives"></label>
         <select id="dcat" aria-label="Filter by category"><option value="">All categories</option>${catOpts}</select>
         <select id="dclip" aria-label="Filter by clipping"><option value="">All clipping types</option>${clipOpts}</select>
         <span class="count" id="dcount"></span></div>
-      <div class="grid" id="dgrid"></div><p class="empty" id="dempty" hidden>No drives match. Clear the search or filters.</p>
-      <section class="vsec"><h3>About the Drive block</h3>${b.sections.map(s => sectionHtml(s, false)).join('')}</section>
+      <div class="grid" id="dgrid"></div><p class="empty" id="dempty" hidden>No drives match. Clear the search or filters.</p>`, `<section class="vsec"><h3>About the Drive block</h3>${b.sections.map(s => sectionHtml(s, false)).join('')}</section>`) + `
       <div class="links"><a href="${WIKI}${b.page}" target="_blank" rel="noopener">Open the Drive block page on the wiki ↗</a></div>`;
   }
   function renderDrives() {
