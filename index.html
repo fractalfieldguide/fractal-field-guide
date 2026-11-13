@@ -363,7 +363,7 @@ dialog::backdrop { background: rgb(2 8 24 / .7); }
 .sbar { border-bottom-color: var(--line); }
 .iconbtn { background: var(--chip); border-color: var(--line); color: var(--ink); }
 .yek { background: var(--yek-soft); box-shadow: inset 0 0 0 1px rgb(255 210 74 / .22); }
-.fqs { background: rgb(47 125 255 / .12); box-shadow: inset 0 0 0 1px rgb(143 208 255 / .2); }
+.fqs { background: linear-gradient(rgb(47 125 255 / .12), rgb(47 125 255 / .12)), var(--surface); box-shadow: inset 0 0 0 1px rgb(143 208 255 / .2); }  /* tint over a solid panel so the background streaks don't show through */
 .fqs .lbl { color: var(--cyan); }
 .fq { border-left-color: rgb(143 208 255 / .35); }
 details.acc, .type, .irgroup, .dev { background: var(--surface); border-color: var(--line); }
