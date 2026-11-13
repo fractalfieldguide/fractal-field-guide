@@ -504,9 +504,9 @@ footer a, .prose a { color: var(--cyan); }
   let FAV = store.get('ffg-favs', []), CMP = store.get('ffg-cmp', []);
 
   /* ---------- Tabs ---------- */
-  const VIEWS = [{ key: 'amps', title: 'Amp models' }, { key: 'drives', title: 'Drives' }, { key: 'cabs', title: 'Cab IRs' }, { key: 'dynacabs', title: 'DynaCabs' }, { key: 'cabblock', title: 'Cab block' }, { key: 'namblock', title: 'NAM block' }].concat(BLOCKS.filter(b => !['cabs', 'drives'].includes(b.key)).map(b => ({ key: b.key, title: b.title }))).concat([{ key: 'favs', title: '★ Favourites' }]);
+  const VIEWS = [{ key: 'amps', title: 'Amp models' }, { key: 'drives', title: 'Drives' }, { key: 'cabs', title: 'Cab IRs' }, { key: 'dynacabs', title: 'DynaCabs' }, { key: 'cabblock', title: 'Cab block' }].concat(BLOCKS.filter(b => !['cabs', 'drives'].includes(b.key)).map(b => ({ key: b.key, title: b.title }))).concat([{ key: 'favs', title: '★ Favourites' }]);
   // Top-level tabs group related blocks (as Fractal groups them); groups with several blocks show a second row.
-  const GROUPS = [{ t: 'Amps', k: ['amps', 'ampblock'] }, { t: 'Drives', k: ['drives', 'dynadist'] }, { t: 'Cabs', k: ['cabs', 'dynacabs', 'cabblock', 'irplayer', 'tonematch'] }, { t: 'NAM', k: ['nam', 'namblock'] },
+  const GROUPS = [{ t: 'Amps', k: ['amps', 'ampblock'] }, { t: 'Drives', k: ['drives', 'dynadist'] }, { t: 'Cabs', k: ['cabs', 'dynacabs', 'cabblock', 'irplayer', 'tonematch'] }, { t: 'NAM', k: ['nam'] },
     { t: 'Dynamics', k: ['compressors', 'multiband', 'gate', 'volume'] }, { t: 'Delay', k: ['delays', 'multitap', 'plex', 'megatap', 'tentap'] }, { t: 'Reverbs', k: ['reverbs'] },
     { t: 'Modulation', k: ['chorus', 'flangers', 'phasers', 'tremolo', 'rotary', 'ringmod'] }, { t: 'EQ & Filter', k: ['eq', 'filter', 'formant', 'resonator', 'wahs', 'enhancer'] },
     { t: 'Pitch & Synth', k: ['pitch', 'synth', 'vocoder'] }, { t: 'Looper', k: ['looper'] }, { t: 'Routing', k: ['input', 'output', 'audio', 'crossover', 'mixer', 'mux', 'sendreturn'] }, { t: 'Presets', k: ['presets', 'scenes', 'channels', 'factory'] }, { t: 'Control', k: ['tuner', 'tempo', 'modifiers', 'pedals', 'fc'] }, { t: 'Utilities', k: ['common', 'globalblocks', 'rta', 'scenemidi', 'setup'] }, { t: '★ Favourites', k: ['favs'] }];
@@ -758,7 +758,7 @@ footer a, .prose a { color: var(--cyan); }
   // Open a page, expand the matching section and scroll to it (or its sub-heading)
   function jumpTo(key, secTitle, subTitle) {
     const b = BLOCKS.find(x => x.key === key);
-    const target = key === 'cabs' ? (/dynacab/i.test(secTitle) ? 'dynacabs' : 'cabblock') : key === 'nam' ? 'namblock' : key;
+    const target = key === 'cabs' ? (/dynacab/i.test(secTitle) ? 'dynacabs' : 'cabblock') : key;
     pendingJump = [target, secTitle, subTitle];
     if (location.hash.slice(1) !== target) location.hash = target; else doJump();
   }
@@ -792,7 +792,7 @@ footer a, .prose a { color: var(--cyan); }
       const terms = (i, j) => (SI.find(e => e[0] === i && e[1] === j) || [])[2] || '';
       const page0 = (VIEWS.find(v => v.key === b.key) || {}).title || b.title;
       b.sections.forEach((sec, i) => {
-        const page = b.key === 'cabs' ? (/dynacab/i.test(sec.title) ? 'DynaCabs' : 'Cab block') : b.key === 'nam' ? 'NAM block' : page0;
+        const page = b.key === 'cabs' ? (/dynacab/i.test(sec.title) ? 'DynaCabs' : 'Cab block') : page0;
         GIX.push({ k: 'Pages', t: sec.title, s: page, x: L([sec.title, terms(i, -1), TEXT_READY ? flat(sec.c) : ''].join(' ')), tt: L(sec.title), go: () => jumpTo(b.key, sec.title, null) });
         (sec.subs || []).forEach((x, j) => GIX.push({ k: 'Pages', t: x.title, s: page + ' · ' + (isG(sec) ? 'More parameters' : sec.title), x: L([x.title, sec.title, terms(i, j), TEXT_READY ? flat(x.c) : ''].join(' ')), tt: L(x.title), go: () => jumpTo(b.key, sec.title, x.title) }));
       });
@@ -939,10 +939,11 @@ footer a, .prose a { color: var(--cyan); }
   function genericView(b) {
     const intro = rc(b.intro.filter(c => c.t !== 'img'));
     const shots = b.intro.filter(c => c.t === 'img' && IMGS[c.k]).map(c => `<img src="${IMGS[c.k]}" alt="${esc(b.title)} block on the device screen" loading="lazy">`).join('');
-    const secs = `<section class="vsec"><h3>${b.srclabel || (b.page ? 'From the wiki' : 'From the Blocks Guide and firmware notes')}</h3>${b.sections.map((s, i) => sectionHtml(s, false)).join('')}</section>`;
+    const secs = b.key === 'nam'
+      ? `<section class="vsec"><h3>From the Blocks Guide</h3><p class="note" style="margin:0 0 6px">Plus the firmware 33.00 notes and Fractal's comments collected on the wiki.</p>${b.sections.map(s => sectionHtml(s, false)).join('')}</section>`
+      : `<section class="vsec"><h3>${b.srclabel || (b.page ? 'From the wiki' : 'From the Blocks Guide and firmware notes')}</h3>${b.sections.map((s, i) => sectionHtml(s, false)).join('')}</section>`;
     const nTypes = (b.types || []).reduce((n, g) => n + g.items.length, 0);
-    const body = b.key === 'nam' ? typeGroups(b) + `<p class="note" style="margin-top:18px">Loading captures, storage, CPU and tips are on the <a href="#namblock">NAM block</a> tab.</p>`
-      : nTypes && b.sections.length ? paneWrap(b.key, nTypes, blockName(b), typeGroups(b), secs) : typeGroups(b) + secs;
+    const body = nTypes && b.sections.length ? paneWrap(b.key, nTypes, blockName(b), typeGroups(b), secs) : typeGroups(b) + secs;
     return blockHead(b, '') + (shots ? `<div class="shots">${shots}</div>` : '') + (intro ? `<div class="prose" style="margin-top:12px">${intro}</div>` : '') + body + `
       <div class="links">${b.links ? b.links.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('') : `<a href="${WIKI}${b.page}" target="_blank" rel="noopener">Open the ${esc(b.title)} page on the wiki ↗</a>`}</div>`;
   }
@@ -1030,12 +1031,6 @@ footer a, .prose a { color: var(--cyan); }
       <div class="links"><a href="${WIKI}Cab_block" target="_blank" rel="noopener">Cab block on the wiki ↗</a><a href="${WIKI}Cab_models" target="_blank" rel="noopener">Cab models on the wiki ↗</a></div>`;
   }
   // The Cab block's own wiki sections (everything except the DynaCab notes), on a tab of their own
-  // The NAM block's sections, on a tab of their own
-  function namBlockView(b) {
-    return `<div class="view-head"><h2>NAM block</h2><p class="lede">Loading captures, storage on Mark I and Mark II, Full and Lite CPU modes, and using the block with a Cab block.</p>${devsHtml(b)}</div>
-      <section class="vsec"><h3>From the Blocks Guide</h3><p class="note" style="margin:0 0 6px">Plus the firmware 33.00 notes and Fractal's comments collected on the wiki.</p>${b.sections.map(s => sectionHtml(s, false)).join('')}</section>
-      <div class="links">${(b.links || []).map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('')}</div>`;
-  }
   function cabBlockView(b) {
     return `<div class="view-head"><h2>Cab block</h2><p class="lede">How the Cab block works: legacy and DynaCab modes, the grid, mono or stereo, CPU, preamp simulation, every parameter, and tips.</p>${devsHtml(b)}</div>
       <section class="vsec"><h3>${esc(b.srclabel || 'From the wiki')}</h3>${b.sections.filter(s => !isDyna(s)).map(s => sectionHtml(s, false)).join('')}</section>
@@ -1094,10 +1089,10 @@ footer a, .prose a { color: var(--cyan); }
     refreshPill();
     if (k === 'amps') { renderAmps(); return; }
     if (k === 'favs' || k === 'compare') { $('#blockview').dataset.k = ''; $('#blockview').innerHTML = k === 'favs' ? favsView() : compareView(); return; }
-    const b = BLOCKS.find(x => x.key === (k === 'dynacabs' || k === 'cabblock' ? 'cabs' : k === 'namblock' ? 'nam' : k));
+    const b = BLOCKS.find(x => x.key === (k === 'dynacabs' || k === 'cabblock' ? 'cabs' : k));
     if ($('#blockview').dataset.k !== k) {
       $('#blockview').dataset.k = k;
-      $('#blockview').innerHTML = k === 'drives' ? drivesView(b) : k === 'cabs' ? cabsView(b) : k === 'dynacabs' ? dynaView(b) : k === 'cabblock' ? cabBlockView(b) : k === 'namblock' ? namBlockView(b) : genericView(b);
+      $('#blockview').innerHTML = k === 'drives' ? drivesView(b) : k === 'cabs' ? cabsView(b) : k === 'dynacabs' ? dynaView(b) : k === 'cabblock' ? cabBlockView(b) : genericView(b);
       if (k === 'drives') {
         $('#dq').value = ds.q; $('#dcat').value = ds.cat; $('#dclip').value = ds.clip;
         $('#dq').addEventListener('input', e => { ds.q = e.target.value; renderDrives(); });
@@ -1175,6 +1170,7 @@ footer a, .prose a { color: var(--cyan); }
 
   let lastHash = location.hash.slice(1);
   function route() {
+    if (location.hash === '#namblock') { PANE.nam = 'block'; history.replaceState(null, '', '#nam'); }
     const h = location.hash.slice(1), fromSheet = /^(amp|drv|fx)-/.test(lastHash); lastHash = h;
     const keep = ['favs', 'compare'].includes(view) && /^(amp|drv|fx)-/.test(h);
     if (h.startsWith('amp-')) { if (!keep) showView('amps'); openItem(h); return; }
