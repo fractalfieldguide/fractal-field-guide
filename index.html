@@ -225,7 +225,8 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
 #fav[aria-pressed="true"] { color: var(--accent); } #fav[aria-pressed="true"] svg { fill: currentColor; }
 .cmppill { position: fixed; right: 16px; bottom: 16px; z-index: 30; background: var(--accent); color: #081638; font-weight: 700; text-decoration: none; padding: 10px 16px; border-radius: 999px; box-shadow: 0 10px 30px rgb(0 0 0 / .45); }
 .cmpwrap { overflow-x: auto; }
-.cmp { border-collapse: collapse; min-width: 100%; }
+.cmp { border-collapse: collapse; table-layout: fixed; width: max(100%, calc(140px + var(--n, 1) * 220px)); }
+.cmp tr:first-child th[scope=row] { width: 140px; }
 .cmp th, .cmp td { border-bottom: 1px solid var(--line); padding: 10px; vertical-align: top; text-align: left; font-size: 16px; min-width: 200px; }
 .cmp th[scope=row] { min-width: 120px; color: var(--muted); font-weight: 500; font-size: 13.5px; text-transform: uppercase; letter-spacing: .05em; }
 .cmp .cph { aspect-ratio: 4 / 3; background: var(--plate) center / contain no-repeat; border-radius: 8px; }
@@ -778,23 +779,37 @@ footer a, .prose a { color: var(--cyan); }
     FAV = FAV.filter(itemById);
     return `<div class="view-head"><h2>Favourites</h2><p class="lede">Tap the star at the top of any amp, drive or effect sheet to keep it here. Favourites are saved in this browser only.</p></div>
       ${FAV.length ? `<section class="vsec"><div class="types">${FAV.map(itemCard).join('')}</div></section>` : '<p class="empty">No favourites yet.</p>'}
-      ${CMP.length ? `<p style="margin-top:18px"><a href="#compare">Compare ${CMP.length} amp${CMP.length > 1 ? 's' : ''} →</a></p>` : ''}`;
+      ${CMP.length ? `<p style="margin-top:18px"><a href="#compare">Compare ${cmpSay()} →</a></p>` : ''}`;
+  }
+  const cmpSay = () => { const a = CMP.filter(x => x.startsWith('amp-')).length, c = CMP.filter(x => x.startsWith('ir-')).length;
+    return [a ? a + ' amp' + (a > 1 ? 's' : '') : '', c ? c + ' cab' + (c > 1 ? 's' : '') : ''].filter(Boolean).join(', '); };
+  function irMakers(m) { const b = BLOCKS.find(x => x.key === 'cabs');
+    return [...new Set(m.g.irs.map(ir => crCode(ir[2])))].map(c => c === 'FAS' ? 'Fractal Audio' : ((b.creators.find(r => r[0] === c) || [c, c])[1])); }
+  function cmpTable(list, photo, rows) {
+    return `<div class="cmpwrap"><table class="cmp" style="--n:${list.length}"><tr><th scope="row"></th>${list.map(a => `<td><div class="cph" style="${photo(a) ? `background-image:url('${photo(a)}')` : ''}"></div><p class="cname">${esc(a.name)}</p>
+        <button type="button" class="linkbtn" data-open="${a.id}">Open</button><button type="button" class="linkbtn" data-uncmp="${a.id}">Remove</button></td>`).join('')}</tr>
+        ${rows.map(([label, f]) => `<tr><th scope="row">${label}</th>${list.map(a => `<td>${f(a) || '—'}</td>`).join('')}</tr>`).join('')}</table></div>`;
   }
   function compareView() {
-    const list = CMP.map(id => AMPS.find(x => x.id === id)).filter(Boolean);
-    if (!list.length) return `<div class="view-head"><h2>Compare amps</h2><p class="lede">Open any amp and press "+ Compare" to add it here (up to 4).</p></div><p class="empty">Nothing to compare yet.</p>`;
-    const row = (label, f) => `<tr><th scope="row">${label}</th>${list.map(a => `<td>${f(a) || '—'}</td>`).join('')}</tr>`;
-    return `<div class="view-head"><h2>Compare amps</h2><p class="lede">${list.length} amp${list.length > 1 ? 's' : ''} side by side. Saved in this browser only.</p></div>
-      <div class="cmpwrap"><table class="cmp"><tr><th scope="row"></th>${list.map(a => `<td><div class="cph" style="${a.photo ? `background-image:url('${a.photo}')` : ''}"></div><p class="cname">${esc(a.name)}</p>
-        <button type="button" class="linkbtn" data-open="${a.id}">Open</button><button type="button" class="linkbtn" data-uncmp="${a.id}">Remove</button></td>`).join('')}</tr>
-        ${row('Based on', a => esc(a.orig))}${row('Maker', a => esc(a.brand))}${row('Power tubes', a => esc(a.tubesTxt || a.tubes.join(', ')))}
-        ${row('Controls', a => esc(a.controls))}${row('Original cab', a => esc(a.cab))}${row('DynaCab', a => esc(a.dyna))}
-        ${row('Family', a => (a.variants.length || 1) + ' model' + (a.variants.length > 1 ? 's' : ''))}
-        ${row('Yek write-up', a => a.yw.length ? 'Yes, ' + esc(fmtD(a.yw[0].posted)) : 'Wiki notes only')}${row('Fractal comments', a => a.fq.length)}</table></div>
+    const amps = CMP.filter(id => id.startsWith('amp-')).map(id => AMPS.find(x => x.id === id)).filter(Boolean);
+    const cabs = CMP.filter(id => id.startsWith('ir-')).map(itemById).filter(Boolean);
+    if (!amps.length && !cabs.length) return `<div class="view-head"><h2>Compare</h2><p class="lede">Open any amp or cab and press "+ Compare" to add it here (up to 4 of each).</p></div><p class="empty">Nothing to compare yet.</p>`;
+    const cb = BLOCKS.find(x => x.key === 'cabs');
+    return `<div class="view-head"><h2>Compare</h2><p class="lede">${cmpSay()} side by side. Saved in this browser only.</p></div>
+      ${amps.length ? `<section class="vsec"><h3>Amps</h3>${cmpTable(amps, a => a.photo, [
+        ['Based on', a => esc(a.orig)], ['Maker', a => esc(a.brand)], ['Power tubes', a => esc(a.tubesTxt || a.tubes.join(', '))],
+        ['Controls', a => esc(a.controls)], ['Original cab', a => esc(a.cab)], ['DynaCab', a => esc(a.dyna)],
+        ['Family', a => (a.variants.length || 1) + ' model' + (a.variants.length > 1 ? 's' : '')],
+        ['Yek write-up', a => a.yw.length ? 'Yes, ' + esc(fmtD(a.yw[0].posted)) : 'Wiki notes only'], ['Fractal comments', a => a.fq.length]])}</section>` : ''}
+      ${cabs.length ? `<section class="vsec"><h3>Cabs</h3>${cmpTable(cabs, m => pmSrc(PM.irg[m.bi + ':' + m.gi]), [
+        ['Size', m => esc(m.z)], ['Maker', m => esc(m.mk)], ['Wiki notes', m => esc(m.g.d.join(' '))],
+        ['Bank', m => esc(cb.banks[m.bi].name)], ['IRs', m => m.g.irs.length], ['IRs by', m => esc(irMakers(m).join(', '))],
+        ['Photo', m => spkTag(PM.irg[m.bi + ':' + m.gi]) ? 'The speaker' : pmSrc(PM.irg[m.bi + ':' + m.gi]) ? 'The cab' : '']])}</section>` : ''}
       <p style="margin-top:14px"><button type="button" class="clearcmp" data-uncmp="*">Clear compare</button></p>`;
   }
-  function refreshPill() { const p = $('#cmppill'); p.hidden = !CMP.length || view === 'compare'; p.textContent = `Compare ${CMP.length} amp${CMP.length > 1 ? 's' : ''} →`; }
-  function toggleCmp(id) { CMP = CMP.includes(id) ? CMP.filter(x => x !== id) : CMP.concat(id).slice(-4); store.set('ffg-cmp', CMP); refreshPill();
+  function refreshPill() { const p = $('#cmppill'); p.hidden = !CMP.length || view === 'compare'; p.textContent = `Compare ${cmpSay()} →`; }
+  function toggleCmp(id) { const pre = id.split('-')[0] + '-', same = CMP.filter(x => x.startsWith(pre));
+    CMP = CMP.includes(id) ? CMP.filter(x => x !== id) : CMP.filter(x => same.length < 4 || x !== same[0]).concat(id); store.set('ffg-cmp', CMP); refreshPill();
     document.querySelectorAll(`[data-cmp="${id}"]`).forEach(b => { const on = CMP.includes(id); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '✓ In compare' : '+ Compare'; });
     if (view === 'compare') { $('#blockview').innerHTML = compareView(); } }
 
@@ -1163,7 +1178,7 @@ footer a, .prose a { color: var(--cyan); }
     const b = BLOCKS.find(x => x.key === 'cabs'), r = PM.irg[m.bi + ':' + m.gi], src = pmSrc(r);
     const terms = cs.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const hit = ir => (terms.length || cs.cr) && (!cs.cr || crCode(ir[2]) === cs.cr) && terms.every(t => (ir[1] + ' ' + ir[2]).toLowerCase().includes(t));
-    const makers = [...new Set(m.g.irs.map(ir => crCode(ir[2])))].map(c => c === 'FAS' ? 'Fractal Audio' : ((b.creators.find(r => r[0] === c) || [c, c])[1]));
+    const makers = irMakers(m);
     return `<div class="hero">${mediaHtml(src, m.gn, m.gn, true)}
       <div style="min-width:0"><p class="maker">${esc(m.mk)}${m.z ? ' · ' + esc(m.z) : ''}</p><h2 class="dname" id="dname">${esc(m.gn)}</h2>
         ${m.g.d.length ? `<p class="dorig">${esc(m.g.d.join(' '))}</p>` : ''}
@@ -1279,7 +1294,7 @@ footer a, .prose a { color: var(--cyan); }
     cur = id;
     $('#detail').innerHTML = id.startsWith('ir-') ? irDetail(it) : id.startsWith('fx-') ? fxDetail(it) : id.startsWith('drv-') ? drvDetail(it) : ampDetail(it);
     $('#detail').scrollTop = 0;
-    const sc = $('#sbcmp'); sc.hidden = !id.startsWith('amp-'); sc.dataset.cmp = id; sc.setAttribute('aria-pressed', String(CMP.includes(id))); sc.textContent = CMP.includes(id) ? '✓ In compare' : '+ Compare';
+    const sc = $('#sbcmp'); sc.hidden = !/^(amp|ir)-/.test(id); sc.dataset.cmp = id; sc.setAttribute('aria-pressed', String(CMP.includes(id))); sc.textContent = CMP.includes(id) ? '✓ In compare' : '+ Compare';
     $('#fav').setAttribute('aria-pressed', String(FAV.includes(id))); $('#fav').setAttribute('aria-label', FAV.includes(id) ? 'Remove from favourites' : 'Add to favourites');
     const list = L.shown.includes(it) ? L.shown : L.all; const i = list.indexOf(it);
     $('#crumb').textContent = `${L.label} · ${i + 1} / ${list.length}`;
