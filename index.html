@@ -30,7 +30,8 @@
   --f-wide: "Michroma", "Eurostile", "Arial Black", sans-serif;
   --f-display: "Saira Semi Condensed", "Arial Narrow", sans-serif;
   --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-code: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-mono: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;   /* laxu preview: small labels in the body font */
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -317,7 +318,7 @@ details.topic .topicbody { padding: 0 0 10px 22px; }
 .irgroup .gname { font-family: var(--f-display); font-weight: 800; font-size: 22.5px; text-transform: uppercase; margin: 0 0 4px; overflow-wrap: anywhere; }
 .irgroup .gdesc { font-size: 15.5px; color: var(--muted); margin: 0 0 8px; max-width: 80ch; }
 .irs { display: flex; flex-wrap: wrap; gap: 5px; }
-.ir { font-family: var(--f-mono); font-size: 13px; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; }
+.ir { font-family: var(--f-code); font-size: 13px; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; }
 .ir i { font-style: normal; color: var(--muted); margin-right: 5px; }
 .ir mark { background: var(--accent-soft); color: inherit; }
 .inline-search { flex: 1 1 240px; min-width: 0; position: relative; }
@@ -371,7 +372,21 @@ header.top .lede strong { color: var(--accent); }
 .plate { background: linear-gradient(180deg, #151a22, #07090d); background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / .025) 0 1px, transparent 1px 3px), linear-gradient(180deg, #151a22, #07090d); color: #e6eefb; box-shadow: inset 0 0 0 1px #2a3446, 0 0 0 1px #000; }
 .plate .lbl { color: #8fb2e8; }
 .platefull { color: #d7e2f5; }
-.knob { box-shadow: 0 2px 3px rgb(0 0 0 / .6), 0 0 0 2px #2b3442, 0 0 10px rgb(47 125 255 / .45); }
+.knob { box-shadow: 0 2px 4px rgb(0 0 0 / .7), 0 0 0 2px #05070a, inset 0 0 0 1px rgb(255 255 255 / .07), 0 0 8px rgb(47 125 255 / .22); }
+.plate .knobs { gap: 18px 24px; }
+/* laxu preview: amp and matching cabs side by side, Compare in the top bar, plainer labels, calmer background */
+.toprow { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 26px; align-items: start; }
+.toprow .hero { grid-template-columns: 1fr; gap: 14px; }
+.toprow .hero .media { max-width: 340px; }
+.toprow > .sec { margin-top: 0; }
+.toprow > .sec h3 small { display: block; margin-top: 4px; font-family: var(--f-body); font-size: 14px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.toprow .cablinks { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+@media (max-width: 760px) { .toprow { grid-template-columns: 1fr; } .toprow > .sec { margin-top: 22px; } }
+.dorig .based { display: inline-block; font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 10px; }
+.sbcmp { margin: 0 4px 0 0; padding: 5px 12px; font-size: 13.5px; white-space: nowrap; flex: none; }
+@media (max-width: 480px) { .sbcmp { padding: 5px 9px; } }
+.sbcmp[hidden] { display: none; }
+.streak { opacity: calc(var(--o, .55) * .45); }
 .sw { box-shadow: 0 0 0 2px #2b3442; }
 dialog { background: #0a1b45; color: var(--ink); box-shadow: 0 0 0 1px var(--line), 0 24px 70px rgb(0 0 0 / .6); }
 dialog::backdrop { background: rgb(2 8 24 / .7); }
@@ -473,6 +488,7 @@ footer a, .prose a { color: var(--cyan); }
   <div class="sheet">
     <div class="sbar">
       <span class="crumb" id="crumb"></span>
+      <button type="button" class="cmpbtn sbcmp" id="sbcmp" data-cmp="" hidden>+ Compare</button>
       <button class="iconbtn" id="fav" aria-label="Add to favourites" aria-pressed="false" title="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg></button>
       <button class="iconbtn" id="prev" aria-label="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg></button>
       <button class="iconbtn" id="next" aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg></button>
@@ -582,7 +598,7 @@ footer a, .prose a { color: var(--cyan); }
     // Input Trim is on every model, so it isn't listed
     const rows = a.auth.map(([labs, knobs]) => `${many ? `<p class="varlbl">${esc(labs.join(' · '))}</p>` : ''}<div class="knobs">${knobs.filter(k => k !== 'Input Trim').map(knob).join('')}</div>`).join('');
     const orig = a.controls ? `<p class="platenote"><b>On the original amp:</b> ${esc(a.controls)}</p>` : '';
-    return `<div class="plate"><p class="lbl">Tone page in Authentic mode</p>${rows}<p class="platenote">The knobs FM9-Edit shows for ${a.auth.reduce((n, g) => n + g[0].length, 0) > 1 ? 'these models' : 'this model'} with Tone Control Display set to Authentic (read from an FM9 on firmware 12.00). Knob positions aren\'t settings.</p>${orig}</div>`;
+    return `<div class="plate"><p class="lbl">Tone page in Authentic mode</p>${rows}<p class="platenote">As shown in FM9-Edit with Tone Control Display set to Authentic (FM9 firmware 12.00).</p>${orig}</div>`;
   }
   function faceplate(controls, label, what = 'amp') {
     if (!controls) return '';
@@ -698,11 +714,12 @@ footer a, .prose a { color: var(--cyan); }
     const fq = a.fq.length ? `<section class="sec yek"><h3>From Fractal Audio <small>${a.fq.length} comment${a.fq.length > 1 ? 's' : ''} collected on the wiki</small></h3>
         ${a.fq.slice(0, 3).map(q => `<p class="fq">${esc(q)}</p>`).join('')}
         ${a.fq.length > 3 ? `<details class="more"><summary>Show ${a.fq.length - 3} more</summary>${a.fq.slice(3).map(q => `<p class="fq">${esc(q)}</p>`).join('')}</details>` : ''}</section>` : '';
+    const sayBrand = !(a.orig || '').toLowerCase().includes((a.brand || '').split(/[ /]/)[0].toLowerCase());
     return `<div class="hero">${mediaHtml(a.photo, a.orig || a.name, a.name, true)}
-        <div style="min-width:0"><p class="maker">${esc(a.brand)}</p><h2 class="dname" id="dname">${esc(a.name)}</h2>${Object.entries(FWA.amp[a.id] || {}).map(([n, v]) => fwChip(v, n.toUpperCase() === a.name.toUpperCase() ? '' : n)).join('')}<p class="dorig">${esc(a.orig)}</p>
+        <div style="min-width:0">${sayBrand ? `<p class="maker">${esc(a.brand)}</p>` : ''}<h2 class="dname" id="dname">${esc(a.name)}</h2>${Object.entries(FWA.amp[a.id] || {}).map(([n, v]) => fwChip(v, n.toUpperCase() === a.name.toUpperCase() ? '' : n)).join('')}${a.orig ? `<p class="dorig"><span class="based">Based on</span>${esc(a.orig)}</p>` : ''}
           ${a.variants.length ? `<p class="lbl">Models in this family</p><div class="row">${a.variants.map(v => `<span class="vchip">${esc(v)}</span>`).join('')}</div>` : ''}
           ${a.tubes.length ? `<p class="lbl" style="margin-top:12px">Power tubes</p><div class="row">${a.tubes.map(t => `<span class="tube">${esc(t)}</span>`).join('')}</div>` : ''}
-          <button type="button" class="cmpbtn" data-cmp="${a.id}" aria-pressed="${CMP.includes(a.id)}">${CMP.includes(a.id) ? '✓ In compare' : '+ Compare'}</button></div></div>
+</div></div>
       ${a.auth ? authPlate(a) : faceplate(a.controls, 'Front panel of the original amp')}
       ${matchingCabs(a)}
       ${writeups(a.yw)}
@@ -1260,6 +1277,7 @@ footer a, .prose a { color: var(--cyan); }
     cur = id;
     $('#detail').innerHTML = id.startsWith('ir-') ? irDetail(it) : id.startsWith('fx-') ? fxDetail(it) : id.startsWith('drv-') ? drvDetail(it) : ampDetail(it);
     $('#detail').scrollTop = 0;
+    const sc = $('#sbcmp'); sc.hidden = !id.startsWith('amp-'); sc.dataset.cmp = id; sc.setAttribute('aria-pressed', String(CMP.includes(id))); sc.textContent = CMP.includes(id) ? '✓ In compare' : '+ Compare';
     $('#fav').setAttribute('aria-pressed', String(FAV.includes(id))); $('#fav').setAttribute('aria-label', FAV.includes(id) ? 'Remove from favourites' : 'Add to favourites');
     const list = L.shown.includes(it) ? L.shown : L.all; const i = list.indexOf(it);
     $('#crumb').textContent = `${L.label} · ${i + 1} / ${list.length}`;
