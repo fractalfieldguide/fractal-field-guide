@@ -785,7 +785,7 @@ footer a, .prose a { color: var(--cyan); }
   function doJump() {
     if (!pendingJump) return; const [target, secTitle, subTitle] = pendingJump;
     if (view !== target) return;
-    if (!/^dynacabs$/.test(target)) setPane('block');
+    setPane('block');
     const d = [...document.querySelectorAll('#blockview details.acc')].find(x => x.querySelector('summary b')?.textContent === secTitle);
     if (!d) { if (TEXT_READY) pendingJump = null; return; } d.open = true;
     const h = subTitle ? d.querySelector('#s-' + CSS.escape(slug(subTitle))) : d.querySelector('summary');
@@ -1076,9 +1076,9 @@ footer a, .prose a { color: var(--cyan); }
     const sizes = [...new Set(DYN.map(x => x.z).filter(Boolean))].sort(sizeSort);
     const notes = b.sections.filter(isDyna);
     return `<div class="view-head"><h2>DynaCabs</h2><p class="lede">The ${b.dyna.length} stock DynaCabs in the Axe-Fx III, FM9 and FM3. Pick a mic and move it on the speaker; the device loads the matching captured IR behind the scenes.</p></div>
-      ${filterBar('dy', sizes, counts(DYN, 'mk'), 'Search DynaCabs, speakers or amps, e.g. V30, Greenback, Twin')}
-      <section class="vsec" style="margin-top:14px"><div class="dyna" id="dygrid"></div><p class="empty" id="dyempty" hidden>No DynaCabs match. Clear the search or filters.</p></section>
-      ${notes.length ? `<section class="vsec"><h3>About DynaCabs</h3>${notes.map(s => sectionHtml(s, false)).join('')}</section>` : ''}
+      ${paneWrap('dynacabs', DYN.length, 'About DynaCabs', `${filterBar('dy', sizes, counts(DYN, 'mk'), 'Search DynaCabs, speakers or amps, e.g. V30, Greenback, Twin')}
+      <section class="vsec" style="margin-top:14px"><div class="dyna" id="dygrid"></div><p class="empty" id="dyempty" hidden>No DynaCabs match. Clear the search or filters.</p></section>`,
+      notes.length ? `<section class="vsec"><h3>${esc(b.srclabel || 'From the wiki')}</h3>${notes.map(s => sectionHtml(s, false)).join('')}</section>` : '', 'DynaCabs')}
       <div class="links"><a href="${WIKI}DynaCab_cabinet_modeling" target="_blank" rel="noopener">DynaCabs on the wiki ↗</a><a href="${WIKI}Cab_models#DynaCabs" target="_blank" rel="noopener">DynaCab list on the wiki ↗</a></div>`;
   }
   function renderDyna() {
