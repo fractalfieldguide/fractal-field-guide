@@ -797,6 +797,12 @@ footer a, .prose a { color: var(--cyan); }
         (sec.subs || []).forEach((x, j) => GIX.push({ k: 'Pages', t: x.title, s: page + ' · ' + (isG(sec) ? 'More parameters' : sec.title), x: L([x.title, sec.title, terms(i, j), TEXT_READY ? flat(x.c) : ''].join(' ')), tt: L(x.title), go: () => jumpTo(b.key, sec.title, x.title) }));
       });
     });
+    // Whole sections (Synth, Delays, Cab IRs…), so searching a block's name finds its page, not only its types
+    VIEWS.filter(v => v.key !== 'favs').forEach(v => {
+      const g = GROUPS.find(x => x.k.includes(v.key)), b = BLOCKS.find(x => x.key === v.key);
+      const alias = b && b.page ? blockName(b) : v.key === 'cabs' ? 'Cab block' : '';
+      GIX.push({ k: 'Sections', t: v.title, s: g && g.t !== v.title ? g.t + ' tab' : 'Tab', x: L([v.title, alias].join(' ')), tt: L(v.title), go: () => { location.hash = v.key; window.scrollTo({ top: 0 }); } });
+    });
     FX.forEach(f => GIX.push({ k: 'Effects', t: f.n, s: f.b.title + (f.gd || f.d ? ' · ' + (f.gd || f.d) : ''), img: f.psrc, x: L([f.n, f.d, f.gd, f.b.title].join(' ')), go: () => go(f.id) }));
     return GIX;
   }
@@ -804,10 +810,10 @@ footer a, .prose a { color: var(--cyan); }
     const box = $('#gres'), terms = q.toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length || q.trim().length < 2) { box.hidden = true; box.innerHTML = ''; return; }
     const hits = gIndex().filter(x => terms.every(t => x.x.includes(t)));
-    const rank = h => h.tt ? -terms.filter(t => h.tt.includes(t)).length - (h.tt === terms.join(' ') ? 5 : 0) : 0;
-    const groups = ['Amps', 'Drives', 'DynaCabs', 'Cab IRs', 'Effects', 'Pages'].map(k => [k, hits.filter(h => h.k === k).sort((a, b) => rank(a) - rank(b) || (a.tt ? b.x.length - a.x.length : 0))]).filter(([, l]) => l.length);
+    const rank = h => h.tt ? -terms.filter(t => h.tt.includes(t)).length - (h.tt === terms.join(' ') ? 5 : 0) - (h.tt.startsWith(terms[0]) ? 1 : 0) : 0;
+    const groups = ['Sections', 'Amps', 'Drives', 'DynaCabs', 'Cab IRs', 'Effects', 'Pages'].map(k => [k, hits.filter(h => h.k === k).sort((a, b) => rank(a) - rank(b) || (a.tt ? b.x.length - a.x.length : 0))]).filter(([, l]) => l.length);
     window.__gh = hits;
-    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"><span class="th${h.img ? '' : ' none'}${h.k === 'Pages' ? ' pg' : ''}" style="${h.img ? `background-image:url('${h.img}')` : ''}"></span><span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
+    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"><span class="th${h.img ? '' : ' none'}${h.k === 'Pages' || h.k === 'Sections' ? ' pg' : ''}" style="${h.img ? `background-image:url('${h.img}')` : ''}"></span><span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
       : '<p class="more" style="padding:8px">Nothing found.</p>';
     box.hidden = false;
   }
