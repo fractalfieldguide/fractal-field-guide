@@ -187,6 +187,7 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
 .type .tphoto.ph { background: radial-gradient(120% 90% at 30% 20%, #17377d 0%, #0c1f4a 60%, #081638 100%); color: var(--cyan); }
 .tphoto.ph .phin { display: grid; justify-items: center; gap: 8px; opacity: .85; }
 .tphoto.ph svg { width: 46%; height: auto; }
+.tphoto.ph svg[viewBox="0 0 40 24"] { width: 40%; stroke-width: 1.4; }  /* the per-effect icons */
 .tphoto.ph small { font: 400 10px/1 var(--f-wide); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .gsrc { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); margin: 4px 0 8px; }
 .wsrc { font-size: 14.5px; color: var(--muted); margin: 0 0 8px; }
@@ -729,7 +730,7 @@ footer a, .prose a { color: var(--cyan); }
   function itemCard(id) {
     const it = itemById(id); if (!it) return '';
     const name = it.name || it.n, sub = id.startsWith('amp-') ? (it.orig || it.brand) : id.startsWith('drv-') ? it.orig : (it.gd || it.d), kind = id.startsWith('amp-') ? 'Amp' : id.startsWith('drv-') ? 'Drive' : it.b.title, src = it.photo || it.psrc;
-    return `<div class="type" data-open="${id}" tabindex="0" role="button">${src ? `<div class="tphoto"><img src="${src}" alt="" loading="lazy"></div>` : phPlate(kind)}<span class="num">${esc(kind)}</span><b>${esc(name)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
+    return `<div class="type" data-open="${id}" tabindex="0" role="button">${src ? `<div class="tphoto"><img src="${src}" alt="" loading="lazy"></div>` : phPlate(kind, id.startsWith('fx-') ? fxIcon(it) : WAVE)}<span class="num">${esc(kind)}</span><b>${esc(name)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
   }
   function favsView() {
     FAV = FAV.filter(itemById);
@@ -867,7 +868,7 @@ footer a, .prose a { color: var(--cyan); }
 
   /* ---------- Block views ---------- */
   const WAVE = '<svg viewBox="0 0 120 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M4 20c8-14 16-14 24 0s16 14 24 0 16-14 24 0 16 14 24 0 12-10 16-6"/></svg>';
-  const phPlate = (label) => `<div class="tphoto ph"><div class="phin">${WAVE}<small>${esc(label)}</small></div></div>`;
+  const phPlate = (label, icon = WAVE) => `<div class="tphoto ph"><div class="phin">${icon}<small>${esc(label)}</small></div></div>`;
   // Index of every effect type, so each card can open the detail sheet
   const GD = BD.guide || { fx: {}, drv: {} };
   const FWA = BD.fwadd || { amp: {}, drv: {}, fx: {}, dyna: {} };
@@ -972,7 +973,7 @@ footer a, .prose a { color: var(--cyan); }
       const phHtml = psrc ? `<div class="tphoto"><img src="${psrc}" alt="${esc(ph ? ph.cap : n)}" loading="lazy"></div>` : '';
       const cred = pr && psrc ? pmCredit(pr) : ph ? `<div class="photo-credit">Photo: ${esc(ph.cap)} · <a href="${esc(ph.page)}" target="_blank" rel="noopener">${esc(ph.artist || 'Wikimedia Commons')}, ${esc(ph.lic)}</a></div>` : '';
       const it = FX.find(x => x.b === b && x.n === n && x.g === g.label);
-      return `<div class="type" data-open="${it.id}" tabindex="0" role="button" aria-label="${esc(n)} details">${phHtml || phPlate(b.title)}<b>${esc(n)}</b>${(it.fw || it.gd || it.d) ? `<span>${esc(it.fw ? it.fw[1] : it.gd || it.d)}</span>` : ''}${it.note ? '<div class="fxnote">Wiki notes inside →</div>' : ''}${cred}</div>`;
+      return `<div class="type" data-open="${it.id}" tabindex="0" role="button" aria-label="${esc(n)} details">${phHtml || phPlate(b.title, fxIcon(it))}<b>${esc(n)}</b>${(it.fw || it.gd || it.d) ? `<span>${esc(it.fw ? it.fw[1] : it.gd || it.d)}</span>` : ''}${it.note ? '<div class="fxnote">Wiki notes inside →</div>' : ''}${cred}</div>`;
     }).join('')}</div></section>`).join('');
   }
   function blockHead(b, lede) {
