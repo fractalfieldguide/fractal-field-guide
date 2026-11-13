@@ -202,7 +202,7 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
 .gres .th { width: 44px; height: 34px; border-radius: 5px; background: var(--plate) center / contain no-repeat; }
 .gres .th.none { background: var(--chip); }
 .gres b { display: block; font-size: 16px; } .gres small { display: block; color: var(--muted); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gres .th.pg { background: var(--chip); position: relative; } .gres .th.pg::after { content: "¶"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--cyan); font-size: 20px; }
+.gres button.txt { grid-template-columns: 1fr; }  /* text results (sections, topics) have no picture */
 .flash { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; transition: outline-color 1.5s; }
 .gres .more { color: var(--muted); font-size: 13.5px; margin: 2px 8px 6px; }
 .cablinks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
@@ -813,7 +813,7 @@ footer a, .prose a { color: var(--cyan); }
     const rank = h => h.tt ? -terms.filter(t => h.tt.includes(t)).length - (h.tt === terms.join(' ') ? 5 : 0) - (h.tt.startsWith(terms[0]) ? 1 : 0) : 0;
     const groups = ['Sections', 'Amps', 'Drives', 'DynaCabs', 'Cab IRs', 'Effects', 'Pages'].map(k => [k, hits.filter(h => h.k === k).sort((a, b) => rank(a) - rank(b) || (a.tt ? b.x.length - a.x.length : 0))]).filter(([, l]) => l.length);
     window.__gh = hits;
-    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"><span class="th${h.img ? '' : ' none'}${h.k === 'Pages' || h.k === 'Sections' ? ' pg' : ''}" style="${h.img ? `background-image:url('${h.img}')` : ''}"></span><span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
+    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"${h.k === 'Pages' || h.k === 'Sections' ? ' class="txt"' : ''}>${h.k === 'Pages' || h.k === 'Sections' ? '' : `<span class="th${h.img ? '' : ' none'}" style="${h.img ? `background-image:url('${h.img}')` : ''}"></span>`}<span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
       : '<p class="more" style="padding:8px">Nothing found.</p>';
     box.hidden = false;
   }
