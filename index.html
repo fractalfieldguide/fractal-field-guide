@@ -742,10 +742,11 @@ footer a, .prose a { color: var(--cyan); }
   }
 
   /* ---------- Favourites & compare ---------- */
-  function itemById(id) { return id.startsWith('amp-') ? AMPS.find(x => x.id === id) : id.startsWith('drv-') ? DRV.models.find(x => x.id === id) : FX.find(x => x.id === id); }
+  function itemById(id) { if (id.startsWith('ir-')) return irGroups(BLOCKS.find(x => x.key === 'cabs')).find(x => x.id === id); return id.startsWith('amp-') ? AMPS.find(x => x.id === id) : id.startsWith('drv-') ? DRV.models.find(x => x.id === id) : FX.find(x => x.id === id); }
   function itemCard(id) {
     const it = itemById(id); if (!it) return '';
-    const name = it.name || it.n, sub = id.startsWith('amp-') ? (it.orig || it.brand) : id.startsWith('drv-') ? it.orig : (it.gd || it.d), kind = id.startsWith('amp-') ? 'Amp' : id.startsWith('drv-') ? 'Drive' : it.b.title, src = it.photo || it.psrc;
+    const isIR = id.startsWith('ir-');
+    const name = it.name || it.n, sub = isIR ? it.mk : id.startsWith('amp-') ? (it.orig || it.brand) : id.startsWith('drv-') ? it.orig : (it.gd || it.d), kind = isIR ? 'Cab IR' : id.startsWith('amp-') ? 'Amp' : id.startsWith('drv-') ? 'Drive' : it.b.title, src = isIR ? pmSrc(PM.irg[it.bi + ':' + it.gi]) : it.photo || it.psrc;
     return `<div class="type" data-open="${id}" tabindex="0" role="button">${src ? `<div class="tphoto"><img src="${src}" alt="" loading="lazy"></div>` : phPlate(kind, id.startsWith('fx-') ? fxIcon(it) : WAVE)}<span class="num">${esc(kind)}</span><b>${esc(name)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
   }
   function favsView() {
@@ -802,7 +803,7 @@ footer a, .prose a { color: var(--cyan); }
     DRV.models.forEach(m => GIX.push({ k: 'Drives', t: m.name, s: m.orig, img: m.photo, x: L([m.name, m.orig, (m.variants || []).map(v => v.name).join(' '), (GD.drv[m.name] || []).map(x => x[1]).join(' ')].join(' ')), go: () => go(m.id) }));
     const cb = BLOCKS.find(x => x.key === 'cabs');
     cb.dyna.forEach(([n, d]) => GIX.push({ k: 'DynaCabs', t: n, s: d, img: pmSrc(PM.dyna[n]), x: L(n + ' ' + d), go: () => showFiltered('dynacabs', n) }));
-    irGroups(cb).forEach(m => GIX.push({ k: 'Cab IRs', t: m.gn, s: m.mk + ' · ' + cb.banks[m.bi].name, img: pmSrc(PM.irg[m.bi + ':' + m.gi]), x: L(m.gn + ' ' + m.g.d.join(' ') + ' ' + m.mk), go: () => showFiltered('cabs', m.gn) }));
+    irGroups(cb).forEach(m => GIX.push({ k: 'Cab IRs', t: m.gn, s: m.mk + ' · ' + cb.banks[m.bi].name, img: pmSrc(PM.irg[m.bi + ':' + m.gi]), x: L(m.gn + ' ' + m.g.d.join(' ') + ' ' + m.mk), go: () => go(m.id) }));
     // Page sections and sub-sections: headings and parameter names right away, the full text once text.json is in
     const flat = (c) => (c || []).map(x => x.x || (x.i || []).map(y => Array.isArray(y) ? y.join(' ') : y).join(' ') || (x.r || []).map(r => r.join(' ')).join(' ')).join(' ');
     const isG = s => /^More parameters/.test(s.title);
@@ -1110,12 +1111,38 @@ footer a, .prose a { color: var(--cyan); }
       <div class="links"><a href="${WIKI}Cab_block" target="_blank" rel="noopener">Cab block on the wiki ↗</a><a href="${WIKI}Cab_models" target="_blank" rel="noopener">Cab models on the wiki ↗</a></div>`;
   }
   const cs = { bank: 0, q: '', mk: '', z: '' };
+  let shownIR = [];
+  // Cab IR groups as cards, like amps and drives; each opens a page with the description and the IR list
+  function irCard(m, nShown) {
+    const r = PM.irg[m.bi + ':' + m.gi], src = pmSrc(r), n = m.g.irs.length;
+    return `<button class="card" type="button" data-open="${m.id}">
+      ${mediaHtml(src, m.gn, m.gn)}
+      <div class="cbody">
+        <div class="eyebrow"><span class="maker">${esc(m.mk)}</span>${m.z ? `<span class="tube">${esc(m.z)}</span>` : ''}</div>
+        <h2 class="cname">${esc(m.gn)}</h2>
+        ${m.g.d.length ? `<p class="csyn">${esc(m.g.d.join(' '))}</p>` : ''}
+        <div class="cfoot">${nShown < n ? `${nShown} of ${n} IRs match` : `${n} IR${n > 1 ? 's' : ''}`}${spkTag(r) ? ' · photo shows the speaker' : ''}</div>
+      </div></button>`;
+  }
+  function irDetail(m) {
+    const b = BLOCKS.find(x => x.key === 'cabs'), r = PM.irg[m.bi + ':' + m.gi], src = pmSrc(r);
+    const terms = cs.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const hit = ir => terms.length && terms.every(t => (ir[1] + ' ' + ir[2]).toLowerCase().includes(t));
+    return `<div class="hero">${mediaHtml(src, m.gn, m.gn, true)}
+      <div style="min-width:0"><p class="maker">${esc(m.mk)}${m.z ? ' · ' + esc(m.z) : ''}</p><h2 class="dname" id="dname">${esc(m.gn)}</h2>
+        ${m.g.d.length ? `<p class="dorig">${esc(m.g.d.join(' '))}</p>` : ''}
+        <p class="wsrc">${esc(b.banks[m.bi].name)} · ${m.g.irs.length} IR${m.g.irs.length > 1 ? 's' : ''}${spkTag(r) ? ' · the photo shows the speaker' : ''}</p>
+        ${src && r ? pmCredit(r) : ''}</div></div>
+      <section class="sec"><h3>IRs in this group <small>slot number and name, as on the device</small></h3>
+        <div class="irs">${m.g.irs.map(ir => `<span class="ir" title="${esc(ir[2])}"><i>${esc(ir[0])}</i>${hit(ir) ? `<mark>${esc(ir[1])}</mark>` : esc(ir[1])}</span>`).join('')}</div></section>
+      <div class="links"><a href="${WIKI}Cab_models" target="_blank" rel="noopener">Cab models on the wiki ↗</a><a href="#cabs">All Cab IRs</a></div>`;
+  }
   let IRG = null;
   function irGroups(b) {
     if (IRG) return IRG;
     IRG = [];
     b.banks.forEach((bank, bi) => bank.groups.forEach((g, gi) => { const gn = groupName(g);
-      IRG.push({ bi, gi, g, gn, z: sizeOf(gn.replace(/^(\d+x\d+)[co+].*/, '$1')), mk: makerOf(g.d.join(' '), gn) }); }));
+      IRG.push({ id: 'ir-' + bi + '-' + gi, name: gn, bi, gi, g, gn, z: sizeOf(gn.replace(/^(\d+x\d+)[co+].*/, '$1')), mk: makerOf(g.d.join(' '), gn) }); }));
     return IRG;
   }
   function groupName(g) {
@@ -1131,7 +1158,7 @@ footer a, .prose a { color: var(--cyan); }
     // While searching or filtering, look through both factory banks; otherwise show the selected bank.
     const banks = filtering ? b.banks.map((_, i) => i) : [cs.bank];
     const all = irGroups(b);
-    let total = 0, parts = [];
+    let total = 0, parts = []; shownIR = [];
     banks.forEach(bi => {
       const bank = b.banks[bi]; const meta = all.filter(x => x.bi === bi); let n = 0;
       const html = bank.groups.map((g, gi) => {
@@ -1141,11 +1168,11 @@ footer a, .prose a { color: var(--cyan); }
         const irs = g.irs.filter(r => terms.every(t => (r[1] + ' ' + r[2]).toLowerCase().includes(t) || gtxt.includes(t)));
         if (!irs.length) return '';
         n += irs.length;
-        const r = PM.irg[bi + ':' + gi], src = pmSrc(r);
-      return `<div class="irgroup">${src ? `<div class="tphoto"><img src="${src}" alt="" loading="lazy">${spkTag(r)}</div>` : ''}<p class="gname">${esc(groupName(g))} <span class="note" style="font-family:var(--f-mono);font-weight:400;text-transform:none">${esc(mt.mk)}</span></p>${g.d.length ? `<p class="gdesc">${esc(g.d.join(' '))}</p>` : ''}<div class="irs">${irs.map(r => `<span class="ir" title="${esc(r[2])}"><i>${esc(r[0])}</i>${esc(r[1])}</span>`).join('')}</div>${src && r ? pmCredit(r) : ''}</div>`;
+        shownIR.push(mt);
+        return irCard(mt, irs.length);
       }).join('');
       total += n;
-      if (html) parts.push((filtering ? `<h3 class="bankhead">${esc(bank.name)} <span class="note">${n} IRs</span></h3>` : '') + html);
+      if (html) parts.push((filtering ? `<h3 class="bankhead">${esc(bank.name)} <span class="note">${n} IRs</span></h3>` : '') + `<div class="grid">${html}</div>`);
     });
     $('#irlist').innerHTML = parts.join('') || '<p class="empty">No IRs match. Clear the search or filters.</p>';
     $('#ircount').textContent = filtering ? `${total} IRs across both factory banks` : `${total} IRs in ${b.banks[cs.bank].name}`;
@@ -1204,12 +1231,13 @@ footer a, .prose a { color: var(--cyan); }
   const dlg = $('#sheet');
   let cur = null;
   function listFor(id) {
+    if (id.startsWith('ir-')) return { all: irGroups(BLOCKS.find(x => x.key === 'cabs')), shown: shownIR, label: 'Cab IRs' };
     if (id.startsWith('fx-')) { const it = FX.find(x => x.id === id); const all = it ? FX.filter(x => x.b === it.b) : []; return { all, shown: all, label: it ? it.b.title : 'Effects' }; }
     return id.startsWith('drv-') ? { all: DRV.models, shown: shownDrv, label: 'Drives' } : { all: AMPS, shown: shownAmps, label: 'Amps' }; }
   function openItem(id) {
     const L = listFor(id); const it = L.all.find(x => x.id === id); if (!it) return false;
     cur = id;
-    $('#detail').innerHTML = id.startsWith('fx-') ? fxDetail(it) : id.startsWith('drv-') ? drvDetail(it) : ampDetail(it);
+    $('#detail').innerHTML = id.startsWith('ir-') ? irDetail(it) : id.startsWith('fx-') ? fxDetail(it) : id.startsWith('drv-') ? drvDetail(it) : ampDetail(it);
     $('#detail').scrollTop = 0;
     $('#fav').setAttribute('aria-pressed', String(FAV.includes(id))); $('#fav').setAttribute('aria-label', FAV.includes(id) ? 'Remove from favourites' : 'Add to favourites');
     const list = L.shown.includes(it) ? L.shown : L.all; const i = list.indexOf(it);
@@ -1228,7 +1256,7 @@ footer a, .prose a { color: var(--cyan); }
   // some browsers queue or skip the dialog 'close' event; the listener below is a backstop.
   function onSheetClosed() {
     const was = cur; cur = null;
-    if (was && location.hash.slice(1) === was && !closing) { const f = FX.find(x => x.id === was); location.hash = ['favs', 'compare'].includes(view) ? view : f ? f.b.key : was.startsWith('drv-') ? 'drives' : 'amps'; }
+    if (was && location.hash.slice(1) === was && !closing) { const f = FX.find(x => x.id === was); location.hash = ['favs', 'compare'].includes(view) ? view : f ? f.b.key : was.startsWith('drv-') ? 'drives' : was.startsWith('ir-') ? 'cabs' : 'amps'; }
   }
   function closeSheet() { if (dlg.open) dlg.close(); onSheetClosed(); }
   dlg.addEventListener('close', onSheetClosed);
@@ -1246,10 +1274,11 @@ footer a, .prose a { color: var(--cyan); }
     if (location.hash === '#namblock') { PANE.nam = 'block'; history.replaceState(null, '', '#nam'); }
     if (location.hash === '#cabblock') { PANE.cabs = 'block'; history.replaceState(null, '', '#cabs'); }
     if (location.hash === '#amp-dizzy-v4') history.replaceState(null, '', '#amp-dizzy-v4-blue');   // split into Blue and Silver
-    const h = location.hash.slice(1), fromSheet = /^(amp|drv|fx)-/.test(lastHash); lastHash = h;
-    const keep = ['favs', 'compare'].includes(view) && /^(amp|drv|fx)-/.test(h);
+    const h = location.hash.slice(1), fromSheet = /^(amp|drv|fx|ir)-/.test(lastHash); lastHash = h;
+    const keep = ['favs', 'compare'].includes(view) && /^(amp|drv|fx|ir)-/.test(h);
     if (h.startsWith('amp-')) { if (!keep) showView('amps'); openItem(h); return; }
     if (h.startsWith('drv-')) { if (!keep) showView('drives'); openItem(h); return; }
+    if (h.startsWith('ir-')) { if (!keep) showView('cabs'); openItem(h); return; }
     if (h.startsWith('fx-')) { const f = FX.find(x => x.id === h); if (f) { if (!keep) showView(f.b.key); openItem(h); return; } }
     if (dlg.open) { closing = true; dlg.close(); cur = null; closing = false; }
     showView(VIEWS.some(v => v.key === h) || h === 'compare' ? h : 'amps');
