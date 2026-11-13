@@ -849,6 +849,8 @@ footer a, .prose a { color: var(--cyan); }
   const normN = s => s.toUpperCase().replace(/[’']/g, "'").replace(/\s*\(ALL\)\s*/, '').replace(/\s+/g, ' ').trim();
   DRV.models.forEach(m => {
     m.id = 'drv-' + slug(m.name);
+    // FAS LED-Drive gets the same Fractal graphic as the other custom drives (the wiki shows an LED)
+    if (m.name === 'FAS LED-DRIVE') { const fb = DRV.models.find(x => x.name === 'FAS BOOST'); if (fb && fb.img) m.img = fb.img; }
     m.yw = FD.drv[m.id] || []; m.photo = yekImg(m.yw, m.img && IMGS[m.img]) || (m.img && IMGS[m.img]) || PM.webimgs[(PM.drv[m.id] || {}).w] || null;
     const names = [m.name].concat((m.variants || []).map(v => v.name)).map(normN);
     m.cats = []; m.clips = [];
