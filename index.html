@@ -201,6 +201,8 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
 .gres button:hover, .gres button:focus-visible { background: var(--chip); outline: none; }
 .gres .th { width: 44px; height: 34px; border-radius: 5px; background: var(--plate) center / contain no-repeat; }
 .gres .th.none { background: var(--chip); }
+.gres .th.ic { display: grid; place-items: center; color: var(--cyan); }
+.gres .th.ic svg { width: 32px; height: 20px; }
 .gres b { display: block; font-size: 16px; } .gres small { display: block; color: var(--muted); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gres button.txt { grid-template-columns: 1fr; }  /* text results (sections, topics) have no picture */
 .flash { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; transition: outline-color 1.5s; }
@@ -803,7 +805,7 @@ footer a, .prose a { color: var(--cyan); }
       const alias = b && b.page ? blockName(b) : v.key === 'cabs' ? 'Cab block' : '';
       GIX.push({ k: 'Sections', t: v.title, s: g && g.t !== v.title ? g.t + ' tab' : 'Tab', x: L([v.title, alias].join(' ')), tt: L(v.title), go: () => { location.hash = v.key; window.scrollTo({ top: 0 }); } });
     });
-    FX.forEach(f => GIX.push({ k: 'Effects', t: f.n, s: f.b.title + (f.gd || f.d ? ' · ' + (f.gd || f.d) : ''), img: f.psrc, x: L([f.n, f.d, f.gd, f.b.title].join(' ')), go: () => go(f.id) }));
+    FX.forEach(f => GIX.push({ k: 'Effects', ic: f.psrc ? '' : fxIcon(f), t: f.n, s: f.b.title + (f.gd || f.d ? ' · ' + (f.gd || f.d) : ''), img: f.psrc, x: L([f.n, f.d, f.gd, f.b.title].join(' ')), go: () => go(f.id) }));
     return GIX;
   }
   function gSearch(q) {
@@ -813,7 +815,7 @@ footer a, .prose a { color: var(--cyan); }
     const rank = h => h.tt ? -terms.filter(t => h.tt.includes(t)).length - (h.tt === terms.join(' ') ? 5 : 0) - (h.tt.startsWith(terms[0]) ? 1 : 0) : 0;
     const groups = ['Sections', 'Amps', 'Drives', 'DynaCabs', 'Cab IRs', 'Effects', 'Pages'].map(k => [k, hits.filter(h => h.k === k).sort((a, b) => rank(a) - rank(b) || (a.tt ? b.x.length - a.x.length : 0))]).filter(([, l]) => l.length);
     window.__gh = hits;
-    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"${h.k === 'Pages' || h.k === 'Sections' ? ' class="txt"' : ''}>${h.k === 'Pages' || h.k === 'Sections' ? '' : `<span class="th${h.img ? '' : ' none'}" style="${h.img ? `background-image:url('${h.img}')` : ''}"></span>`}<span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
+    box.innerHTML = groups.length ? groups.map(([k, l]) => `<h4>${k} · ${l.length}</h4>` + l.slice(0, 6).map(h => `<button type="button" data-gi="${hits.indexOf(h)}"${h.k === 'Pages' || h.k === 'Sections' ? ' class="txt"' : ''}>${h.k === 'Pages' || h.k === 'Sections' ? '' : `<span class="th${h.img ? '' : ' none'}${h.ic ? ' ic' : ''}" style="${h.img ? `background-image:url('${h.img}')` : ''}">${h.ic || ''}</span>`}<span><b>${esc(h.t)}</b><small>${esc(h.s || '')}</small></span></button>`).join('') + (l.length > 6 ? `<p class="more">+ ${l.length - 6} more: add another word to narrow it down</p>` : '')).join('')
       : '<p class="more" style="padding:8px">Nothing found.</p>';
     box.hidden = false;
   }
@@ -878,6 +880,55 @@ footer a, .prose a { color: var(--cyan); }
     if (sl.startsWith(k)) { const r = sl.slice(k.length); return r[0] === '-' && k.length / sl.length >= 0.5; }
     return false; };
   const noteKey = (keys, sl) => keys.find(k => k === sl) || keys.find(k => noteOk(k, sl));
+
+  // Small line icons for search results that have no photo: one per block, plus the actual shapes for Synth waveforms and Filter types
+  const IC = {
+    wave: 'M3 12c4-9 8-9 12 0s8 9 12 0 7-8 10-3',
+    sine: 'M3 12c4.3-10 8.7-10 13 0s8.7 10 13 0 4-7 8-6',
+    triangle: 'M3 12l6-8 11 16 11-16 6 8',
+    square: 'M3 18V6h9v12h9V6h9v12h7',
+    saw: 'M3 18L13 6v12l10-12v12l10-12v12h4',
+    random: 'M3 14h5V6h5v10h5V9h5v9h5V5h5v8h1',
+    noise: 'M3 12l2-5 2 9 2-11 2 13 2-8 2 6 2-10 2 12 2-7 2 5 2-9 2 11 2-6 2 4 2-3',
+    delay: 'M6 4v16M15 7v13M23 10v10M30 13v7M36 16v4',
+    reverb: 'M3 20V4M3 6c6 6 12 9 20 11s10 2 14 2',
+    comp: 'M4 7h32M4 17h32M20 1v5M17 3l3 3 3-3M20 23v-5M17 21l3-3 3 3',
+    gate: 'M3 19h8V5h18v14h8',
+    volume: 'M4 19L36 5v14z',
+    eq: 'M3 15c7 0 8-9 14-9s7 13 12 13 5-6 8-6',
+    lowpass: 'M3 8h18c7 0 9 6 16 12',
+    highpass: 'M3 20c7-6 9-12 16-12h18',
+    bandpass: 'M3 20c9 0 11-15 17-15s8 15 17 15',
+    shelf: 'M3 16h10c5 0 6-8 12-8h12',
+    comb: 'M3 8c3 0 3 12 6 12s3-12 6-12 3 12 6 12 3-12 6-12 3 12 6 12 3-12 2-12',
+    allpass: 'M3 12h34M24 7l5 5-5 5',
+    wah: 'M3 20c9 0 11-15 17-15s8 15 17 15M14 2l-4 3 4 3M26 2l4 3-4 3',
+    pitch: 'M12 21V3M7 8l5-5 5 5M28 3v18M23 16l5 5 5-5',
+    trem: 'M3 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0 4 6 6 0 4-6 6 0 3 4 4 2',
+    rotary: 'M28 6a10 10 0 1 0 4 8M28 1v6h-6',
+    ring: 'M14 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0M26 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0',
+    loop: 'M10 6h18a6 6 0 0 1 0 12H12a6 6 0 0 1-6-6M10 2l-4 4 4 4',
+    bars: 'M5 15v-4M10 18V7M15 21V3M20 17V8M25 19V5M30 16V9M35 14v-4',
+    cross: 'M3 6c12 0 22 12 34 12M3 18c12 0 22-12 34-12',
+    mixer: 'M10 3v18M20 3v18M30 3v18M7 15h6M17 8h6M27 12h6',
+    route: 'M3 12h10M13 12l8-7h16M13 12l8 7h16',
+    ir: 'M3 19h8V4l2 15c6-2 14-2 24 0',
+    drive: 'M3 12l5-8h6l6 16h6l6-16h5',
+    match: 'M3 14c7 0 9-8 16-8s9 10 18 6M3 17c7 0 9-8 16-8s9 10 18 6',
+    nam: 'M7 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M7 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M33 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M20 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M10 7l7 4M10 17l7-4M23 12h7',
+    midi: 'M20 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M15 12h0M20 7h0M25 12h0M17 9h0M23 9h0',
+  };
+  const IC_BLOCK = { compressors: 'comp', multiband: 'comp', gate: 'gate', volume: 'volume', delays: 'delay', multitap: 'delay', plex: 'delay', megatap: 'delay', tentap: 'delay',
+    reverbs: 'reverb', eq: 'eq', filter: 'eq', formant: 'bandpass', resonator: 'comb', enhancer: 'eq', chorus: 'wave', flangers: 'comb', phasers: 'wave', tremolo: 'trem',
+    rotary: 'rotary', ringmod: 'ring', wahs: 'wah', pitch: 'pitch', synth: 'square', vocoder: 'bars', looper: 'loop', rta: 'bars', crossover: 'cross', mixer: 'mixer',
+    mux: 'route', sendreturn: 'route', scenemidi: 'midi', irplayer: 'ir', tonematch: 'match', nam: 'nam', dynadist: 'drive' };
+  function fxIcon(f) {
+    const n = f.n.toLowerCase(), k = f.b.key;
+    let i = IC_BLOCK[k] || 'wave';
+    if (k === 'synth') i = /sine/.test(n) ? 'sine' : /triangle/.test(n) ? 'triangle' : /square/.test(n) ? 'square' : /saw/.test(n) ? 'saw' : /random/.test(n) ? 'random' : /noise/.test(n) ? 'noise' : 'eq';
+    if (k === 'filter') i = /wah/.test(n) ? 'wah' : /band|envelope/.test(n) ? 'bandpass' : /comb/.test(n) ? 'comb' : /allpass/.test(n) ? 'allpass' : /shelf/.test(n) ? 'shelf' : /high/.test(n) ? 'highpass' : /low/.test(n) ? 'lowpass' : 'eq';
+    return `<svg viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[i]}"/></svg>`;
+  }
   const FX = [];
   BLOCKS.filter(b => !['cabs', 'drives'].includes(b.key)).forEach(b => {
     const notes = {};
